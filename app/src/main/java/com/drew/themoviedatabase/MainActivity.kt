@@ -11,17 +11,41 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
+import com.drew.themoviedatabase.screens.Home.HomeScreen
+import com.drew.themoviedatabase.screens.Home.MoviesViewModel
 import com.drew.themoviedatabase.ui.theme.TheMovieDatabaseTheme
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val viewModel: MoviesViewModel by lazy {
+        ViewModelProvider(this).get(MoviesViewModel::class.java)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+//        CoroutineScope(Dispatchers.IO).launch {
+//            viewModel.fetchPopularMovies()
+//        }
+//        CoroutineScope(Dispatchers.IO).launch {
+//            viewModel.fetchTopRatedMovies()
+//        }
+//        CoroutineScope(Dispatchers.IO).launch {
+//            viewModel.fetchNowPlayingMovies()
+//        }
+//        CoroutineScope(Dispatchers.IO).launch {
+//            viewModel.fetchUpcomingMovies()
+//        }
         enableEdgeToEdge()
         setContent {
             TheMovieDatabaseTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                    MovieDatabaseApp(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -36,6 +60,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         text = "Hello $name!",
         modifier = modifier
     )
+
 }
 
 @Preview(showBackground = true)

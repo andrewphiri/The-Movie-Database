@@ -1,6 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -47,6 +50,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Allow references to generated code
+    kapt {
+        correctErrorTypes = true
+    }
 }
 
 dependencies {
@@ -72,4 +80,32 @@ dependencies {
     //Gson
     implementation(libs.converter.gson)
     implementation (libs.okhttp)
+
+    //Coil
+    implementation(libs.coil)
+    implementation(libs.coil.compose)
+
+    //Hilt
+    implementation (libs.hilt.android)
+    implementation (libs.androidx.hilt.navigation.compose)
+    kapt(libs.hilt.compiler)
+    // LiveData extensions for Jetpack Compose
+    implementation(libs.androidx.runtime.livedata)
+
+// ViewModel for Jetpack Compose
+    implementation (libs.androidx.lifecycle.viewmodel.compose)
+
+    //Navigation
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
+
+    //ExoPlayer
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.exoplayer.dash)
+    implementation(libs.androidx.media3.ui)
+
+    //
+    implementation (libs.androidx.webkit)
 }
+
+
