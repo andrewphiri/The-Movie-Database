@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -60,12 +61,16 @@ fun HomeScreen(
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    // Loading state
+    var isLoading by remember { mutableStateOf(true) }
 
-    var popularMovies by remember { mutableStateOf<MovieDetailsReleaseData?>(null) }
-    var topRatedMovies by remember { mutableStateOf<MovieDetailsReleaseData?>(null) }
-    var nowPlayingMovies by remember { mutableStateOf<MovieDetailsReleaseData?>(null) }
-    var upcomingMovies by remember { mutableStateOf<MovieDetailsReleaseData?>(null) }
-    var trendingMovies by remember { mutableStateOf<MovieDetailsReleaseData?>(null) }
+    var popularMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
+    var topRatedMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
+    var nowPlayingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
+    var upcomingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
+    var trendingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
+
+
 
     // Observing movie lists
     moviesViewModel.popularMovies.observe(lifecycleOwner) {
@@ -78,17 +83,21 @@ fun HomeScreen(
         nowPlayingMovies = it
     }
     moviesViewModel.upcomingMovies.observe(lifecycleOwner) {
-        upcomingMovies = it
+        upcomingMovies = it?.filter { it?.status != "Released" }
     }
 
     moviesViewModel.trendingMovies.observe(lifecycleOwner) {
         trendingMovies = it
     }
 
-    // Loading state
-    var isLoading by remember { mutableStateOf(true) }
 
-        if (!popularMovies?.movieDetails.isNullOrEmpty()) {
+
+        if (popularMovies?.isNotEmpty() == true
+            && topRatedMovies?.isNotEmpty() == true
+            && nowPlayingMovies?.isNotEmpty() == true
+            && upcomingMovies?.isNotEmpty() == true
+            && trendingMovies?.isNotEmpty() == true
+        ) {
         isLoading = false
     }
 
@@ -115,17 +124,6 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Upcoming Movies
-                    item {
-                        trendingMovies?.let { trending ->
-                            MovieList(
-                                movies = trending,
-                                categoryTitle = "Trending Movies",
-                                color = Color.Green,
-                                onItemClick = navigateToDetails
-                            )
-                        }
-                    }
 
                     // Upcoming Movies
                     item {
@@ -138,6 +136,20 @@ fun HomeScreen(
                             )
                         }
                     }
+
+                    // Trending Movies
+                    item {
+                        trendingMovies?.let { trending ->
+                            MovieList(
+                                movies = trending,
+                                categoryTitle = "Trending Movies",
+                                color = Color.Green,
+                                onItemClick = navigateToDetails
+                            )
+                        }
+                    }
+
+
 
                     // Popular Movies
                     item {
@@ -167,8 +179,8 @@ fun HomeScreen(
                     item {
                         topRatedMovies?.let { topRated ->
                             MovieList(
-                                movies = topRated.copy(movieDetails = topRated.movieDetails?.sortedByDescending { it?.voteAverage }
-                                    ?.distinct()),
+                                movies = topRated.sortedByDescending { it?.voteAverage }
+                                    ?.distinct(),
                                 categoryTitle = "Top Rated Movies",
                                 color = Color.Magenta,
                                 onItemClick = navigateToDetails
@@ -186,7 +198,7 @@ fun HomeScreen(
 @Composable
 fun MovieList(
     modifier: Modifier = Modifier,
-    movies: MovieDetailsReleaseData,
+    movies: List<MovieDetailsReleaseData?>?,
     categoryTitle: String = "",
     color: Color,
     onItemClick: (Int,String, String) -> Unit
@@ -216,13 +228,12 @@ fun MovieList(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            movies.movieDetails?.size?.let {
+            movies?.size?.let {
                 items(it) { index ->
-                    movies.movieDetails[index]?.let {
+                    movies[index]?.let {
                         MovieItem(
                             modifier = modifier,
                             movie = it,
-                            movieReleaseData = movies,
                             onItemClick = onItemClick,
                         )
                     }
@@ -236,11 +247,12 @@ fun MovieList(
 @Composable
 fun MovieItem(
     modifier: Modifier = Modifier,
-    movie: MovieDetails,
-    movieReleaseData: MovieDetailsReleaseData,
+    movie: MovieDetailsReleaseData,
     onItemClick: (Int, String, String) -> Unit
 ) {
-    val ageRate = movieReleaseData.movieReleaseData?.find { it?.id == movie.id }?.results?.find { it.iso31661 == "US" }?.releaseDates?.find { it.certification != "" }?.certification ?: ""
+    val ageRate = movie.certifications.results
+        .find { it.iso31661 == "US" }?.releaseDates?.
+    find { it.certification != "" }?.certification ?: ""
     ElevatedCard(
         modifier = modifier
             .height(370.dp)
@@ -288,6 +300,7 @@ fun MovieItem(
                 text = movie.title,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 2,
+                minLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 

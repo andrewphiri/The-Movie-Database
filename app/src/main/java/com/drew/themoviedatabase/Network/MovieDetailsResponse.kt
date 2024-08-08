@@ -1,9 +1,9 @@
-package com.drew.themoviedatabase.POJO
+package com.drew.themoviedatabase.Network
 
-import com.drew.themoviedatabase.Network.MovieReleaseData
+import com.drew.themoviedatabase.POJO.Genre
 import com.google.gson.annotations.SerializedName
 
-data class MovieDetailsReleaseData(
+data class MovieDetailsResponse(
     val adult: Boolean,
     @SerializedName("backdrop_path")
     val backdropPath: String?,
@@ -37,6 +37,10 @@ data class MovieDetailsReleaseData(
     val voteAverage: Double,
     @SerializedName("vote_count")
     val voteCount: Int,
+    @SerializedName("credits")
+    val credits: CastResponse,
+    @SerializedName("videos")
+    val videos: TrailersResponse,
     @SerializedName("release_dates")
-   val certifications: MovieReleaseData
+    val certifications: MovieReleaseData
 )

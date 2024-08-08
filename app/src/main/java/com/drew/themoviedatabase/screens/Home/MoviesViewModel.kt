@@ -4,14 +4,8 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.drew.themoviedatabase.Network.API_KEY
-import com.drew.themoviedatabase.Network.MovieApiService
-import com.drew.themoviedatabase.Network.MovieResponse
-import com.drew.themoviedatabase.Network.NetworkClient
-import com.drew.themoviedatabase.Network.TrailersResponse
+import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.POJO.CastMembers
-import com.drew.themoviedatabase.POJO.Movie
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Trailers
@@ -21,10 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import javax.inject.Inject
 
 @HiltViewModel
@@ -32,20 +22,20 @@ class MoviesViewModel @Inject constructor(
     private val repository: MovieRepository
 ) : ViewModel() {
 
-    private val _upcomingMovies = MutableLiveData<MovieDetailsReleaseData?>()
-    val upcomingMovies: LiveData<MovieDetailsReleaseData?> get()  = _upcomingMovies
+    private val _upcomingMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
+    val upcomingMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _upcomingMovies
 
-    private val _popularMovies = MutableLiveData<MovieDetailsReleaseData?>()
-    val popularMovies: LiveData<MovieDetailsReleaseData?> get()  = _popularMovies
+    private val _popularMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
+    val popularMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _popularMovies
 
-    private val _nowPlaying = MutableLiveData<MovieDetailsReleaseData?>()
-    val nowPlayingMovies: LiveData<MovieDetailsReleaseData?> get()  = _nowPlaying
+    private val _nowPlaying = MutableLiveData<List<MovieDetailsReleaseData?>?>()
+    val nowPlayingMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _nowPlaying
 
-    private val _topRatedMovies = MutableLiveData<MovieDetailsReleaseData?>()
-    val topRatedMovies: LiveData<MovieDetailsReleaseData?> get()  = _topRatedMovies
+    private val _topRatedMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
+    val topRatedMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _topRatedMovies
 
-    private val _trendingMovies = MutableLiveData<MovieDetailsReleaseData?>()
-    val trendingMovies: LiveData<MovieDetailsReleaseData?> get()  = _trendingMovies
+    private val _trendingMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
+    val trendingMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _trendingMovies
 
     private val _movieDetails = MutableLiveData<MovieDetails?>()
     val movieDetails: LiveData<MovieDetails?> get() = _movieDetails
@@ -53,16 +43,32 @@ class MoviesViewModel @Inject constructor(
     private val _cast = MutableLiveData<List<CastMembers?>>()
     val cast: LiveData<List<CastMembers?>> get() = _cast
 
+    private val _trailers = MutableLiveData<List<Trailers?>>()
+    val trailers: LiveData<List<Trailers?>> get() = _trailers
+
+    private val _movieDetailsWithCastAndVideos = MutableLiveData<MovieDetailsResponse?>()
+    val movieDetailsWithCastAndVideos: LiveData<MovieDetailsResponse?> get() = _movieDetailsWithCastAndVideos
+
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
+    private val _totalPages = MutableLiveData<Int>()
+    val totalPages: LiveData<Int> get() = _totalPages
+
 
 
     init {
         try {
             CoroutineScope(Dispatchers.IO).launch {
+                _isLoading.postValue(true)
                 async { fetchPopularMovies() }.await()
                 async { fetchTopRatedMovies() }.await()
                 async { fetchNowPlayingMovies() }.await()
-                async { fetchUpcomingMovies() }.await()
+                async {
+                    fetchUpcomingMovies()
+                }.await()
                 async { fetchTrendingMovies() }.await()
+                _isLoading.postValue(false)
             }
         } catch (e : Exception) {
             e.printStackTrace()
@@ -95,7 +101,7 @@ class MoviesViewModel @Inject constructor(
     }
 
 
-    fun fetchUpcomingMovies() {
+     fun fetchUpcomingMovies() {
         repository.fetchUpcomingMovieDetails(1) { fetchedMovies ->
             if (fetchedMovies != null) {
                 _upcomingMovies.value = fetchedMovies
@@ -140,5 +146,16 @@ class MoviesViewModel @Inject constructor(
             }
         }
 
+    }
+
+    fun fetchMovieDetailsWithCastAndVideos(movieId: Int) {
+        repository.fetchMovieDetailsWithCastAndVideos(movieId) { movieDetailsResponse ->
+            if (movieDetailsResponse.isSuccessful) {
+                _movieDetailsWithCastAndVideos.value = movieDetailsResponse.body()
+            }
+        }
+    }
+    suspend fun getTotalPages() : Int  {
+        return repository.getTotalPagesUpcoming()
     }
 }

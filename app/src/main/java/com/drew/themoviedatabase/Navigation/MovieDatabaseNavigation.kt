@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.Navigation
 
+import android.util.Log
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,6 +40,7 @@ fun MovieNavHost(
         composable<HomeScreen> {
             HomeScreen(
                 navigateToDetails = { movieId, ageRating, title ->
+                    Log.d("MovieNavHost", "Navigating to movie details: $movieId")
                     navController.navigate(
                         DetailsScreen(
                             movieId = movieId,

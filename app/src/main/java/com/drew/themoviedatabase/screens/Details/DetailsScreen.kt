@@ -59,6 +59,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Navigation.MovieTopAppBar
+import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.CastMembers
 import com.drew.themoviedatabase.POJO.MovieDetails
@@ -72,7 +73,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DetailsScreen(
     val movieId: Int,
-    val ageRating: String,
+    val ageRating: String = "N/A",
     val title: String,
 )
 
@@ -90,43 +91,46 @@ fun MovieDetailsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
     var trailers by remember {
-        mutableStateOf(listOf<Trailers>())
+        mutableStateOf(listOf<Trailers?>())
     }
     var isLoading by remember { mutableStateOf(true) }
+    var isTrailersEmpty by remember { mutableStateOf(trailers.isEmpty()) }
     val scrollState = rememberScrollState()
 
-    var movieDetails by remember { mutableStateOf<MovieDetails?>(null) }
+    var movieDetails by remember { mutableStateOf<MovieDetailsResponse?>(null) }
     var castMembers by remember { mutableStateOf(listOf<CastMembers?>()) }
+
+    Log.d("DetailsScreen", "DetailsScreen: $isLoading")
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-           async {
-               moviesViewModel.fetchTrailer(movieId) { fetchedTrailers ->
-               trailers = fetchedTrailers
-           }  }.await()
-
-            async {
-                moviesViewModel.fetchMovieDetails(movieId)
-            } .await()
-
-            async {
-                moviesViewModel.fetchCast(movieId)
-            }.await()
+          val job = async {
+               moviesViewModel.fetchMovieDetailsWithCastAndVideos(movieId)
+           }
+            job.await()
         }
     }
 
-    moviesViewModel.movieDetails.observe(lifecycleOwner) {
+
+    moviesViewModel.movieDetailsWithCastAndVideos.observe(lifecycleOwner) {
         movieDetails = it
     }
 
-    moviesViewModel.cast.observe(lifecycleOwner) {
-        castMembers = it
-    }
+//    moviesViewModel.trailers.observe(lifecycleOwner) {
+//        trailers = it
+//    }
+//
+//    moviesViewModel.cast.observe(lifecycleOwner) {
+//        castMembers = it
+//    }
 
-    if (trailers.isNotEmpty() && movieDetails != null) {
+    if (movieDetails != null) {
         isLoading = false
     }
 
+    if(movieDetails?.videos?.getResults()?.isNotEmpty() == true){
+        isTrailersEmpty  = false
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -157,14 +161,14 @@ fun MovieDetailsScreen(
                 item {
                     MovieDetailsScreen(
                         movieDetails = movieDetails,
-                        trailers = trailers,
-                        ageRating = ageRating
+                        trailers = movieDetails?.videos?.getResults(),
+                        isTrailersEmpty = isTrailersEmpty
                     )
                 }
 
                 item {
                     CastList(
-                        castMembers = castMembers
+                        castMembers = movieDetails?.credits?.getCast()
                     )
                 }
 
@@ -177,81 +181,98 @@ fun MovieDetailsScreen(
 @Composable
 fun MovieDetailsScreen(
     modifier: Modifier = Modifier,
-    movieDetails: MovieDetails?,
-    ageRating: String,
-    trailers: List<Trailers>
+    movieDetails: MovieDetailsResponse?,
+    trailers: List<Trailers?>?,
+    isTrailersEmpty: Boolean = false
 ) {
 
-        Column(
-            modifier = modifier,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    val ageRate = movieDetails?.certifications?.results
+        ?.find { it.iso31661 == "US" }?.releaseDates?.
+        find { it.certification != "" }?.certification ?: ""
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 8.dp, start = 8.dp),
+            text = movieDetails?.title ?: "",
+            style = MaterialTheme.typography.titleLarge,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 2
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 8.dp, start = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 8.dp, start = 8.dp),
-                text = movieDetails?.title ?: "",
-                style = MaterialTheme.typography.titleLarge,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 2
+                text = movieDetails?.releaseDate?.split('-')?.get(0) ?: "",
+                style = MaterialTheme.typography.bodySmall
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding( end = 8.dp, start = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = movieDetails?.releaseDate?.split('-')?.get(0) ?: "",
-                    style = MaterialTheme.typography.bodySmall
-                )
 
-                Text(
-                    text = ageRating,
-                    style = MaterialTheme.typography.bodySmall
-                )
+            Text(
+                text = ageRate,
+                style = MaterialTheme.typography.bodySmall
+            )
 
-                Text(
-                    text = formatDuration(movieDetails?.runtime),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(230.dp)
-            ) {
+            Text(
+                text = formatDuration(movieDetails?.runtime),
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(230.dp)
+        ) {
+            if (isTrailersEmpty) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .fillMaxWidth(),
+                        text = "No trailers found",
+                        textAlign = TextAlign.Center
+                        )
+                }
+            } else {
                 YouTubePlayer(
                     videoId = findPreferredVideo(trailers) ?: ""
                 )
             }
 
-            Row(
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AsyncImage(
                 modifier = Modifier
+                    .height(150.dp)
+                    .width(100.dp),
+                model = NetworkClient().getPosterUrl(movieDetails?.posterPath),
+                contentDescription = "${movieDetails?.title} poster",
+                placeholder = null
+            )
+            Text(
+                modifier = Modifier
+                    .fillMaxHeight()
                     .fillMaxWidth()
-                    .height(150.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AsyncImage(
-                    modifier = Modifier
-                        .height(150.dp)
-                        .width(100.dp),
-                    model = NetworkClient().getPosterUrl(movieDetails?.posterPath),
-                    contentDescription = "${movieDetails?.title} poster",
-                    placeholder = null
-                )
-                Text(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    text = movieDetails?.overview ?: "",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+                    .padding(8.dp),
+                text = movieDetails?.overview ?: "",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
 
 }
 }
@@ -380,16 +401,18 @@ fun YouTubePlayer(
 @Composable
 fun CastList(
     modifier: Modifier = Modifier,
-    castMembers: List<CastMembers?>
+    castMembers: List<CastMembers?>?
 ) {
     LazyRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-       items(castMembers.size) {
-           CastCard(castMember = castMembers[it])
-       }
+        castMembers?.size?.let {
+            items(it) {
+                CastCard(castMember = castMembers[it])
+            }
+        }
     }
 }
 
@@ -430,12 +453,12 @@ fun CastCard(
     }
 }
 
-fun findPreferredVideo(trailers: List<Trailers>): String? {
-    val officialTrailer = trailers.find { it.type == "Trailer" && it.name == "Official Trailer" }?.key
+fun findPreferredVideo(trailers: List<Trailers?>?): String? {
+    val officialTrailer = trailers?.find { it?.type == "Trailer" && it.name == "Official Trailer" }?.key
     if (officialTrailer != null) return officialTrailer
 
-    val officialTeaser = trailers.find { it.type == "Teaser" && it.name == "Official Teaser" }?.key
+    val officialTeaser = trailers?.find { it?.type == "Teaser" && it.name == "Official Teaser" }?.key
     if (officialTeaser != null) return officialTeaser
 
-    return trailers.find { it.type == "Teaser" }?.key
+    return trailers?.find { it?.type == "Teaser" }?.key
 }
