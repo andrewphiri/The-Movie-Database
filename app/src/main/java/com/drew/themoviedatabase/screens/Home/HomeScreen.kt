@@ -2,6 +2,7 @@ package com.drew.themoviedatabase.screens.Home
 
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,11 +42,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.drew.themoviedatabase.ComposeUtils.PullToRefresh
 import com.drew.themoviedatabase.Navigation.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.formatDuration
+import com.drew.themoviedatabase.ui.theme.DarkBackground
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -63,6 +71,7 @@ fun HomeScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     // Loading state
     var isLoading by remember { mutableStateOf(true) }
+    val isRefreshing by moviesViewModel.isRefreshing.observeAsState(false)
 
     var popularMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
     var topRatedMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
@@ -74,7 +83,7 @@ fun HomeScreen(
 
     // Observing movie lists
     moviesViewModel.popularMovies.observe(lifecycleOwner) {
-        popularMovies = it
+        popularMovies = it?.sortedByDescending { it?.popularity }
     }
     moviesViewModel.topRatedMovies.observe(lifecycleOwner){
         topRatedMovies = it
@@ -95,8 +104,8 @@ fun HomeScreen(
         if (popularMovies?.isNotEmpty() == true
             && topRatedMovies?.isNotEmpty() == true
             && nowPlayingMovies?.isNotEmpty() == true
-            && upcomingMovies?.isNotEmpty() == true
             && trendingMovies?.isNotEmpty() == true
+            && upcomingMovies?.isNotEmpty() == true
         ) {
         isLoading = false
     }
@@ -110,84 +119,103 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (isLoading) {
-                // Display loading spinner
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(50.dp)
-                )
-            } else {
-                // Display movie lists
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-
-                    // Upcoming Movies
-                    item {
-                        upcomingMovies?.let { upcoming ->
-                            MovieList(
-                                movies = upcoming,
-                                categoryTitle = "Upcoming Movies",
-                                color = Color.Red,
-                                onItemClick = navigateToDetails
-                            )
+            PullToRefresh(
+                onRefresh = {
+                    coroutineScope.launch {
+                        try {
+                            moviesViewModel.setRefreshing(true)
+                            delay(3000)
+                            async { moviesViewModel.fetchPopularMovies() }.await()
+                            async { moviesViewModel.fetchTopRatedMovies() }.await()
+                            async { moviesViewModel.fetchNowPlayingMovies() }.await()
+                            async { moviesViewModel.fetchUpcomingMovies() }.await()
+                            async { moviesViewModel.fetchTrendingMovies() }.await()
+                            moviesViewModel.setRefreshing(false)
+                        } catch (e : Exception) {
+                            e.printStackTrace()
                         }
                     }
-
-                    // Trending Movies
-                    item {
-                        trendingMovies?.let { trending ->
-                            MovieList(
-                                movies = trending,
-                                categoryTitle = "Trending Movies",
-                                color = Color.Green,
-                                onItemClick = navigateToDetails
-                            )
+                },
+                isRefreshing = isRefreshing,
+            ) {
+                if (isLoading) {
+                    // Display loading spinner
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(50.dp)
+                    )
+                } else {
+                    // Display movie lists
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Upcoming Movies
+                        item {
+                            upcomingMovies?.let { upcoming ->
+                                MovieList(
+                                    movies = upcoming,
+                                    categoryTitle = "Upcoming Movies",
+                                    color = Color.Red,
+                                    onItemClick = navigateToDetails
+                                )
+                            }
                         }
-                    }
 
-
-
-                    // Popular Movies
-                    item {
-                        popularMovies?.let { popular ->
-                            MovieList(
-                                movies = popular,
-                                categoryTitle = "Popular Movies",
-                                color = Color.Blue,
-                                onItemClick = navigateToDetails
-                            )
+                        // Trending Movies
+                        item {
+                            trendingMovies?.let { trending ->
+                                MovieList(
+                                    movies = trending,
+                                    categoryTitle = "Trending Movies",
+                                    color = Color.Green,
+                                    onItemClick = navigateToDetails
+                                )
+                            }
                         }
-                    }
 
-                    // Now Playing Movies
-                    item {
-                        nowPlayingMovies?.let { nowPlaying ->
-                            MovieList(
-                                movies = nowPlaying,
-                                categoryTitle = "Now Playing Movies",
-                                color = Color.Yellow,
-                                onItemClick = navigateToDetails
-                            )
+
+
+                        // Popular Movies
+                        item {
+                            popularMovies?.let { popular ->
+                                MovieList(
+                                    movies = popular,
+                                    categoryTitle = "Popular Movies",
+                                    color = Color.Blue,
+                                    onItemClick = navigateToDetails
+                                )
+                            }
                         }
-                    }
 
-                    // Top Rated Movies
-                    item {
-                        topRatedMovies?.let { topRated ->
-                            MovieList(
-                                movies = topRated.sortedByDescending { it?.voteAverage }
-                                    ?.distinct(),
-                                categoryTitle = "Top Rated Movies",
-                                color = Color.Magenta,
-                                onItemClick = navigateToDetails
-                            )
+                        // Now Playing Movies
+                        item {
+                            nowPlayingMovies?.let { nowPlaying ->
+                                MovieList(
+                                    movies = nowPlaying,
+                                    categoryTitle = "Now Playing Movies",
+                                    color = Color.Yellow,
+                                    onItemClick = navigateToDetails
+                                )
+                            }
                         }
-                    }
 
+                        // Top Rated Movies
+                        item {
+                            topRatedMovies?.let { topRated ->
+                                MovieList(
+                                    movies = topRated.sortedByDescending { it?.voteAverage }
+                                        ?.distinct(),
+                                    categoryTitle = "Top Rated Movies",
+                                    color = Color.Magenta,
+                                    onItemClick = navigateToDetails
+                                )
+                            }
+                        }
+
+                    }
                 }
             }
         }

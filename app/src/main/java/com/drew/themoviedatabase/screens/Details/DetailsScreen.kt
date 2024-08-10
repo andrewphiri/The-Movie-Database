@@ -10,12 +10,15 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,9 +38,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
@@ -62,6 +68,7 @@ import com.drew.themoviedatabase.Navigation.MovieTopAppBar
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.CastMembers
+import com.drew.themoviedatabase.POJO.Crew
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.formatDuration
@@ -95,12 +102,8 @@ fun MovieDetailsScreen(
     }
     var isLoading by remember { mutableStateOf(true) }
     var isTrailersEmpty by remember { mutableStateOf(trailers.isEmpty()) }
-    val scrollState = rememberScrollState()
 
     var movieDetails by remember { mutableStateOf<MovieDetailsResponse?>(null) }
-    var castMembers by remember { mutableStateOf(listOf<CastMembers?>()) }
-
-    Log.d("DetailsScreen", "DetailsScreen: $isLoading")
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -116,13 +119,6 @@ fun MovieDetailsScreen(
         movieDetails = it
     }
 
-//    moviesViewModel.trailers.observe(lifecycleOwner) {
-//        trailers = it
-//    }
-//
-//    moviesViewModel.cast.observe(lifecycleOwner) {
-//        castMembers = it
-//    }
 
     if (movieDetails != null) {
         isLoading = false
@@ -156,7 +152,7 @@ fun MovieDetailsScreen(
                     modifier = Modifier
                         .padding(innerPadding)
                         .fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                 item {
                     MovieDetailsScreen(
@@ -168,7 +164,8 @@ fun MovieDetailsScreen(
 
                 item {
                     CastList(
-                        castMembers = movieDetails?.credits?.getCast()
+                        castMembers = movieDetails?.credits?.getCast(),
+                        crew = movieDetails?.credits?.getCrew()
                     )
                 }
 
@@ -190,6 +187,11 @@ fun MovieDetailsScreen(
         ?.find { it.iso31661 == "US" }?.releaseDates?.
         find { it.certification != "" }?.certification ?: ""
 
+    var isExpanded by remember { mutableStateOf(false) }
+    val textLayoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
+    var isClickable by remember { mutableStateOf(false) }
+    var finalText by remember { mutableStateOf(movieDetails?.overview ?: "") }
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -198,9 +200,9 @@ fun MovieDetailsScreen(
         Text(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(end = 8.dp, start = 8.dp),
+                .padding(end = 8.dp, start = 8.dp, top = 8.dp),
             text = movieDetails?.title ?: "",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineMedium,
             overflow = TextOverflow.Ellipsis,
             maxLines = 2
         )
@@ -212,7 +214,7 @@ fun MovieDetailsScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = movieDetails?.releaseDate?.split('-')?.get(0) ?: "",
+                text = movieDetails?.releaseDate ?: "",
                 style = MaterialTheme.typography.bodySmall
             )
 
@@ -252,26 +254,33 @@ fun MovieDetailsScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(150.dp),
+                .height(if (isExpanded)200.dp else 150.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             AsyncImage(
                 modifier = Modifier
-                    .height(150.dp)
+                    .height(175.dp)
                     .width(100.dp),
                 model = NetworkClient().getPosterUrl(movieDetails?.posterPath),
                 contentDescription = "${movieDetails?.title} poster",
                 placeholder = null
             )
-            Text(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                text = movieDetails?.overview ?: "",
-                style = MaterialTheme.typography.bodySmall
-            )
+//            Text(
+//                modifier = Modifier
+//                    .fillMaxHeight()
+//                    .fillMaxWidth()
+//                    .padding(8.dp),
+//                text = movieDetails?.overview ?: "",
+//                style = MaterialTheme.typography.bodySmall
+//            )
+            ExpandableText(
+                overview = finalText,
+                isExpanded = isExpanded,
+                isClickable = isClickable,
+                textLayoutResultState = textLayoutResultState,
+                onExpandClick = { isExpanded = !isExpanded },
+                onClickable = { isClickable = true })
         }
 
 }
@@ -401,17 +410,99 @@ fun YouTubePlayer(
 @Composable
 fun CastList(
     modifier: Modifier = Modifier,
-    castMembers: List<CastMembers?>?
+    castMembers: List<CastMembers?>?,
+    crew: List<Crew>?
 ) {
-    LazyRow(
+    Column(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        castMembers?.size?.let {
-            items(it) {
-                CastCard(castMember = castMembers[it])
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .padding(start = 8.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                VerticalDivider(
+                    modifier = Modifier
+                        .width(10.dp),
+                    color = Color.Cyan
+                )
+                Text(
+                    text = "Cast",
+                    style = MaterialTheme.typography.titleLarge
+                )
             }
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                castMembers?.size?.let {
+                    items(it) {
+                        CastCard(castMember = castMembers[it])
+                    }
+                }
+            }
+
+            CrewCard(
+                modifier = modifier,
+                crew = crew ?: emptyList())
+
+
+    }
+
+}
+
+@Composable
+fun CrewCard(
+    modifier: Modifier = Modifier,
+    crew: List<Crew>
+) {
+    val director = crew.find { it.job == "Director" }?.name
+    val writers = crew.filter { it.job == "Writer" || it.job == "Screenplay" }
+    val getPreferredCrew =
+        if (writers.size > 2) "${writers[0].name}, ${writers[1].name} and others"
+        else if (writers.size == 2) "${writers[0].name}, ${writers[1].name}" else if (writers.size == 1)
+            "${writers[0].name}" else ""
+    Column(
+        modifier = modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = "Director",
+                style = MaterialTheme.typography.titleLarge
+            )
+            if (director != null) {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = director,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = "Writers",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = getPreferredCrew,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
@@ -453,6 +544,56 @@ fun CastCard(
     }
 }
 
+@Composable
+fun ExpandableText(
+    modifier: Modifier = Modifier,
+    overview: String,
+    isExpanded: Boolean = false,
+    isClickable: Boolean = false,
+    textLayoutResultState: MutableState<TextLayoutResult?> = remember { mutableStateOf<TextLayoutResult?>(null)},
+    onExpandClick: () -> Unit,
+    onClickable: () -> Unit
+) {
+
+    var finalOverview by remember { mutableStateOf(overview)}
+     val textResult = textLayoutResultState.value
+    LaunchedEffect(textResult) {
+        if (textResult == null) return@LaunchedEffect
+
+        when {
+            isExpanded -> {
+                finalOverview = "$overview Show Less"
+            }
+            !isExpanded && textResult.hasVisualOverflow -> {
+                val lastCharIndex = textResult.getLineEnd(7 - 1)
+                val showMoreText = "... Show More"
+                val adjustedText = overview
+                    .substring(startIndex = 0, endIndex = lastCharIndex)
+                    .dropLast(showMoreText.length)
+                    .dropLastWhile { it == ' ' || it == '.'}
+
+                finalOverview = "$adjustedText... $showMoreText"
+
+                onClickable()
+            }
+
+        }
+    }
+
+    Text(
+        modifier = modifier
+            .clickable(enabled = isClickable, onClick = onExpandClick)
+            .animateContentSize()
+            .fillMaxWidth()
+            .fillMaxHeight(),
+        text = finalOverview,
+        maxLines = if (isExpanded) Int.MAX_VALUE else 7,
+        style = MaterialTheme.typography.bodySmall,
+        onTextLayout = { textLayoutResultState.value = it }
+    )
+
+}
+
 fun findPreferredVideo(trailers: List<Trailers?>?): String? {
     val officialTrailer = trailers?.find { it?.type == "Trailer" && it.name == "Official Trailer" }?.key
     if (officialTrailer != null) return officialTrailer
@@ -461,4 +602,5 @@ fun findPreferredVideo(trailers: List<Trailers?>?): String? {
     if (officialTeaser != null) return officialTeaser
 
     return trailers?.find { it?.type == "Teaser" }?.key
+
 }

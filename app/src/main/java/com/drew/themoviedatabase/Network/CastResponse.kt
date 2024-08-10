@@ -14,4 +14,7 @@ data class CastResponse(
     fun getCast(): List<CastMembers>? {
         return cast
     }
+    fun getCrew(): List<Crew>? {
+        return crew
+    }
 }

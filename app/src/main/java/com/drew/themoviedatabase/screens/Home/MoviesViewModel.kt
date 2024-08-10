@@ -52,6 +52,9 @@ class MoviesViewModel @Inject constructor(
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> get() = _isLoading
 
+    private val _isRefreshing = MutableLiveData<Boolean>(false)
+    val isRefreshing: LiveData<Boolean> get() = _isRefreshing
+
     private val _totalPages = MutableLiveData<Int>()
     val totalPages: LiveData<Int> get() = _totalPages
 
@@ -68,13 +71,15 @@ class MoviesViewModel @Inject constructor(
                     fetchUpcomingMovies()
                 }.await()
                 async { fetchTrendingMovies() }.await()
-                _isLoading.postValue(false)
             }
         } catch (e : Exception) {
             e.printStackTrace()
         }
     }
 
+    fun setRefreshing(isRefreshing: Boolean) {
+        _isRefreshing.value = isRefreshing
+    }
 
     fun fetchPopularMovies() {
         repository.fetchPopularMovieDetails(3) { fetchedMovies ->
@@ -101,8 +106,11 @@ class MoviesViewModel @Inject constructor(
     }
 
 
-     fun fetchUpcomingMovies() {
-        repository.fetchUpcomingMovieDetails(1) { fetchedMovies ->
+    suspend fun fetchUpcomingMovies() {
+        val pages = getTotalPages()
+        val pageToFetch = if(pages > 10) 10 else 5
+        //Log.d("MoviesViewModel", "Total pages1: ${pages}")
+        repository.fetchUpcomingMovieDetails(pageToFetch) { fetchedMovies ->
             if (fetchedMovies != null) {
                 _upcomingMovies.value = fetchedMovies
             }
