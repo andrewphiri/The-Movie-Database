@@ -1,6 +1,7 @@
 package com.drew.themoviedatabase.Network
 
 import com.drew.themoviedatabase.POJO.Genre
+import com.drew.themoviedatabase.POJO.SpokenLanguage
 import com.google.gson.annotations.SerializedName
 
 data class MovieDetailsResponse(
@@ -12,6 +13,7 @@ data class MovieDetailsResponse(
     val budget: Int,
     val genres: List<Genre>,
     val homepage: String?,
+    val spoken_languages: List<SpokenLanguage>,
     val id: Int,
     @SerializedName("imdb_id")
     val imdbId: String?,

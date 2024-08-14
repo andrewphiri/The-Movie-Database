@@ -1,11 +1,14 @@
 package com.drew.themoviedatabase.data
 
+import android.content.res.Resources
+import androidx.core.os.ConfigurationCompat
 import com.drew.themoviedatabase.Network.API_KEY
 import com.drew.themoviedatabase.Network.CastResponse
 import com.drew.themoviedatabase.Network.MovieApiService
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.MovieReleaseData
 import com.drew.themoviedatabase.Network.MovieResponse
+import com.drew.themoviedatabase.Network.ReviewsResponse
 import com.drew.themoviedatabase.Network.TotalPages
 import com.drew.themoviedatabase.Network.TrailersResponse
 import com.drew.themoviedatabase.POJO.Movie
@@ -20,45 +23,55 @@ import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.Locale
 import javax.inject.Inject
 
 class MovieRepository @Inject constructor(
     private  val movieApiService: MovieApiService,
-    private val defaultLocale: String
 ) {
-    //val defaultLocale = Locale("${ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]}").toLanguageTag() ?: "en-US"
+    val systemLocale = ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]
+    val locale = if (systemLocale != null) {
+        Locale(systemLocale.language, systemLocale.country)
+    } else {
+        Locale("en", "US")
+    }
+    val defaultLocale = locale.toLanguageTag()
 
-
-    fun fetchMovies(pages: Int, callback: (List<MovieDetails?>?) -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val allMovies: MutableList<MovieDetails?>? = mutableListOf()
-            var successful = true
-            for (page in 1..pages) {
-                if (successful) {
-                    val response = movieApiService.getPopularMovies(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute()
-                    if (response?.isSuccessful == true) {
-//                        response.body()?.let { movieResponse ->
-//                            movieResponse.getResults()?.let { allMovies.addAll(it) }
-//                        }
-                        val detailedMovies = response.body()?.getResults()?.map { movie ->
-                            movieApiService.getMovieDetails(movie.id, apiKey = API_KEY, language = defaultLocale)?.execute()?.body()
+    private fun fetchMovies(
+        pages: Int,
+        apiCall: suspend (Int) -> Response<MovieResponse?>?,
+        callback: (List<Movie>?) -> Unit
+    ) {
+        try {
+            CoroutineScope(Dispatchers.IO).launch {
+                val allMovies = mutableListOf<Movie>()
+                val jobs = (1..pages).map { page ->
+                    async {
+                        try {
+                            val response = apiCall(page)
+                            if (response?.isSuccessful == true) {
+                                response.body()?.let { movieResponse ->
+                                    movieResponse.getResults()?.let { allMovies.addAll(it) }
+                                }
+                            }
+                        } catch (e : Exception) {
+                            e.printStackTrace()
                         }
-                        if (detailedMovies != null) {
-                            allMovies?.addAll(detailedMovies)
-                        }
 
-                    } else {
-                        successful = false
                     }
                 }
+                // Await all jobs to complete
+                jobs.awaitAll()
+                // Switch to the main thread to invoke the callback
+                withContext(Dispatchers.Main) {
+                    callback(allMovies)
+                }
             }
-            withContext(Dispatchers.Main) {
-                callback(if (successful) allMovies else null)
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            callback(null)
         }
     }
-
-
 
     private fun fetchMovieDetails(
         pages: Int,
@@ -138,7 +151,18 @@ class MovieRepository @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
 
+    fun fetchSimilarMovieDetails(movieId: Int, pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
+        try {
+            fetchMovieDetails(
+                pages = pages,
+                apiCall = { page -> movieApiService.getSimilarMovies(movieId = movieId, apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                callback = callback,
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun fetchUpcomingMovieDetails(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
@@ -162,43 +186,6 @@ class MovieRepository @Inject constructor(
             )
         } catch (e : Exception) {
             e.printStackTrace()
-        }
-    }
-
-
-    private fun fetchMovies(
-        pages: Int,
-        apiCall: suspend (Int) -> Response<MovieResponse?>?,
-        callback: (List<Movie>?) -> Unit
-    ) {
-        try {
-            CoroutineScope(Dispatchers.IO).launch {
-                val allMovies = mutableListOf<Movie>()
-                val jobs = (1..pages).map { page ->
-                    async {
-                        try {
-                            val response = apiCall(page)
-                            if (response?.isSuccessful == true) {
-                                response.body()?.let { movieResponse ->
-                                    movieResponse.getResults()?.let { allMovies.addAll(it) }
-                                }
-                            }
-                        } catch (e : Exception) {
-                            e.printStackTrace()
-                        }
-
-                    }
-                }
-                // Await all jobs to complete
-                jobs.awaitAll()
-                // Switch to the main thread to invoke the callback
-                withContext(Dispatchers.Main) {
-                    callback(allMovies)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            callback(null)
         }
     }
 
@@ -313,31 +300,32 @@ class MovieRepository @Inject constructor(
         }
     }
 
-    fun getTotalPagesUpcoming(callback: (Int) -> Unit)  {
-        CoroutineScope(Dispatchers.IO).launch {
+    fun getMovieReviews(movieId: Int, callback: (Response<ReviewsResponse?>) -> Unit) {
             try {
-                movieApiService.getTotalPagesUpcoming(apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<TotalPages?> {
-                    override fun onResponse(p0: Call<TotalPages?>, p1: Response<TotalPages?>) {
+                movieApiService.getReviews(movieId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<ReviewsResponse?> {
+                    override fun onResponse(
+                        p0: Call<ReviewsResponse?>,
+                        p1: Response<ReviewsResponse?>
+                    ) {
                         if (p1.isSuccessful) {
-                            callback(p1.body()?.getTotalPages() ?: 1)
+                            callback(p1)
                         }
                     }
-
-                    override fun onFailure(p0: Call<TotalPages?>, p1: Throwable) {
-                        callback(1)
+                    override fun onFailure(p0: Call<ReviewsResponse?>, p1: Throwable) {
+                        callback(Response.success(null))
                     }
                 })
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
+                callback(Response.success(null))
 
         }
     }
 
-    suspend fun getTotalPagesUpcoming(): Int {
+    suspend fun getTotalPages(apiCall: suspend () -> Response<TotalPages?>?) : Int {
         return withContext(Dispatchers.IO) {
             try {
-                val response = movieApiService.getTotalPagesUpcoming(apiKey = API_KEY, language = defaultLocale)?.execute()
+                val response = apiCall()
                 if (response?.isSuccessful == true) {
                     response.body()?.getTotalPages() ?: 1
                 } else {
@@ -350,4 +338,69 @@ class MovieRepository @Inject constructor(
         }
     }
 
+
+    suspend fun getTotalPagesUpcoming(): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+               val pages = getTotalPages {
+                    movieApiService.getTotalPagesUpcoming(apiKey = API_KEY, language = defaultLocale)?.execute()
+                }
+                pages
+            } catch (e: Exception) {
+                e.printStackTrace()
+                1
+            }
+        }
+    }
+
+    suspend fun getTotalPagesTopRated(): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pages = getTotalPages {
+                    movieApiService.getTotalPagesTopRated(
+                        apiKey = API_KEY,
+                        language = defaultLocale
+                    )?.execute()
+                }
+                pages
+            } catch (e: Exception) {
+                e.printStackTrace()
+                1
+            }
+        }
+    }
+
+    suspend fun getTotalPagesNowPlaying(): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pages = getTotalPages {
+                    movieApiService.getTotalPagesNowPlaying(
+                        apiKey = API_KEY,
+                        language = defaultLocale
+                    )?.execute()
+                }
+                pages
+            } catch (e: Exception) {
+                e.printStackTrace()
+                1
+            }
+        }
+    }
+
+    suspend fun getTotalPagesPopular(): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pages = getTotalPages {
+                    movieApiService.getTotalPagesPopular(
+                        apiKey = API_KEY,
+                        language = defaultLocale
+                    )?.execute()
+                    }
+                pages
+            } catch (e: Exception) {
+                e.printStackTrace()
+                1
+            }
+        }
+    }
 }

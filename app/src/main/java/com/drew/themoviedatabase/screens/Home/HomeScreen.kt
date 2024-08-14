@@ -1,14 +1,11 @@
 package com.drew.themoviedatabase.screens.Home
 
-import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,14 +40,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.ComposeUtils.PullToRefresh
-import com.drew.themoviedatabase.Navigation.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
-import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
+import com.drew.themoviedatabase.POJO.TVShowDetails
+import com.drew.themoviedatabase.composeUI.MovieItem
+import com.drew.themoviedatabase.composeUI.TVShowItem
+import com.drew.themoviedatabase.composeUI.TVShowList
 import com.drew.themoviedatabase.formatDuration
-import com.drew.themoviedatabase.ui.theme.DarkBackground
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -63,7 +59,9 @@ object HomeScreen
 fun HomeScreen(
     modifier: Modifier = Modifier,
     moviesViewModel: MoviesViewModel = hiltViewModel(),
-    navigateToDetails: (Int, String,String) -> Unit,
+    tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
+    navigateToMovieDetails: (Int) -> Unit,
+    navigateToTVShowDetails: (Int) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -78,6 +76,11 @@ fun HomeScreen(
     var nowPlayingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
     var upcomingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
     var trendingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
+
+    var popularTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
+    var topRatedTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
+    var onTheAirTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
+    var airingTodayTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
 
 
 
@@ -99,6 +102,19 @@ fun HomeScreen(
         trendingMovies = it
     }
 
+    // Observing TV show lists
+    tvShowsViewModel.popularTVShows.observe(lifecycleOwner) {
+        popularTVShows = it
+    }
+    tvShowsViewModel.topRatedTVShows.observe(lifecycleOwner){
+        topRatedTVShows = it
+    }
+    tvShowsViewModel.onTheAirTVShows.observe(lifecycleOwner) {
+        onTheAirTVShows = it
+    }
+    tvShowsViewModel.airingTodayTVShows.observe(lifecycleOwner) {
+        airingTodayTVShows = it
+    }
 
 
         if (popularMovies?.isNotEmpty() == true
@@ -124,12 +140,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         try {
                             moviesViewModel.setRefreshing(true)
-                            delay(3000)
-                            async { moviesViewModel.fetchPopularMovies() }.await()
-                            async { moviesViewModel.fetchTopRatedMovies() }.await()
-                            async { moviesViewModel.fetchNowPlayingMovies() }.await()
+                            delay(2000)
+                            async { moviesViewModel.fetchPopularMovies(3) }.await()
+                            async { moviesViewModel.fetchTopRatedMovies(3) }.await()
+                            async { moviesViewModel.fetchNowPlayingMovies(3) }.await()
                             async { moviesViewModel.fetchUpcomingMovies() }.await()
-                            async { moviesViewModel.fetchTrendingMovies() }.await()
+                            async { moviesViewModel.fetchTrendingMovies(3) }.await()
                             moviesViewModel.setRefreshing(false)
                         } catch (e : Exception) {
                             e.printStackTrace()
@@ -156,13 +172,23 @@ fun HomeScreen(
                         item {
                             upcomingMovies?.let { upcoming ->
                                 MovieList(
-                                    movies = upcoming,
+                                    movies = upcoming.sortedBy { it?.releaseDate }.distinct(),
                                     categoryTitle = "Upcoming Movies",
                                     color = Color.Red,
-                                    onItemClick = navigateToDetails
+                                    onItemClick = navigateToMovieDetails
                                 )
                             }
                         }
+
+                        item {
+                            TVShowList(
+                                tvShows = popularTVShows?.sortedByDescending { it?.popularity },
+                                categoryTitle = "Popular TV Shows",
+                                color = Color.Red,
+                                onItemClick = navigateToTVShowDetails
+                            )
+                        }
+
 
                         // Trending Movies
                         item {
@@ -171,11 +197,18 @@ fun HomeScreen(
                                     movies = trending,
                                     categoryTitle = "Trending Movies",
                                     color = Color.Green,
-                                    onItemClick = navigateToDetails
+                                    onItemClick = navigateToMovieDetails
                                 )
                             }
                         }
 
+                        item {
+                            TVShowList(
+                                tvShows = topRatedTVShows?.sortedByDescending { it?.voteAverage },
+                                categoryTitle = "Top Rated TV Shows",
+                                color = Color.Red,
+                                onItemClick = navigateToTVShowDetails)
+                        }
 
 
                         // Popular Movies
@@ -185,9 +218,18 @@ fun HomeScreen(
                                     movies = popular,
                                     categoryTitle = "Popular Movies",
                                     color = Color.Blue,
-                                    onItemClick = navigateToDetails
+                                    onItemClick = navigateToMovieDetails
                                 )
                             }
+                        }
+
+                        item {
+                            TVShowList(
+                                tvShows = onTheAirTVShows,
+                                categoryTitle = "On The Air TV Shows",
+                                color = Color.Red,
+                                onItemClick = navigateToTVShowDetails
+                            )
                         }
 
                         // Now Playing Movies
@@ -197,7 +239,7 @@ fun HomeScreen(
                                     movies = nowPlaying,
                                     categoryTitle = "Now Playing Movies",
                                     color = Color.Yellow,
-                                    onItemClick = navigateToDetails
+                                    onItemClick = navigateToMovieDetails
                                 )
                             }
                         }
@@ -210,9 +252,18 @@ fun HomeScreen(
                                         ?.distinct(),
                                     categoryTitle = "Top Rated Movies",
                                     color = Color.Magenta,
-                                    onItemClick = navigateToDetails
+                                    onItemClick = navigateToMovieDetails
                                 )
                             }
+                        }
+
+                        item {
+                            TVShowList(
+                                tvShows = airingTodayTVShows,
+                                categoryTitle = "Airing Today TV Shows",
+                                color = Color.Red,
+                                onItemClick = navigateToTVShowDetails
+                            )
                         }
 
                     }
@@ -229,7 +280,7 @@ fun MovieList(
     movies: List<MovieDetailsReleaseData?>?,
     categoryTitle: String = "",
     color: Color,
-    onItemClick: (Int,String, String) -> Unit
+    onItemClick: (Int) -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -272,87 +323,3 @@ fun MovieList(
 
 }
 
-@Composable
-fun MovieItem(
-    modifier: Modifier = Modifier,
-    movie: MovieDetailsReleaseData,
-    onItemClick: (Int, String, String) -> Unit
-) {
-    val ageRate = movie.certifications.results
-        .find { it.iso31661 == "US" }?.releaseDates?.
-    find { it.certification != "" }?.certification ?: ""
-    ElevatedCard(
-        modifier = modifier
-            .height(370.dp)
-            .width(150.dp),
-        onClick = { onItemClick(movie.id, ageRate, movie.title)}
-    ) {
-       AsyncImage(
-           modifier = Modifier
-               .fillMaxWidth()
-               .weight(1f),
-           model = NetworkClient().getPosterUrl(movie.posterPath),
-           contentDescription = "${movie.title} poster",
-           placeholder = null
-       )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp)
-                .weight(0.5f),
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Image(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Movie Rating",
-                    colorFilter = ColorFilter.tint(Color.Yellow)
-                )
-
-                Text(
-                    text = movie.voteAverage.toBigDecimal().setScale(1, java.math.RoundingMode.HALF_UP).toString(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                text = movie.title,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                minLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = movie.releaseDate.split('-')[0],
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Text(
-                    text = ageRate,
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Text(
-                    text = formatDuration(movie.runtime),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-        }
-    }
-}

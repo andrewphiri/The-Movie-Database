@@ -1,6 +1,5 @@
 package com.drew.themoviedatabase.screens.Home
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -8,6 +7,7 @@ import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.POJO.CastMembers
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
+import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.data.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +37,12 @@ class MoviesViewModel @Inject constructor(
     private val _trendingMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
     val trendingMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _trendingMovies
 
+    private val _similarMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
+    val similarMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _similarMovies
+
+    private val _recommendedMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
+    val recommendedMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _recommendedMovies
+
     private val _movieDetails = MutableLiveData<MovieDetails?>()
     val movieDetails: LiveData<MovieDetails?> get() = _movieDetails
 
@@ -48,6 +54,9 @@ class MoviesViewModel @Inject constructor(
 
     private val _movieDetailsWithCastAndVideos = MutableLiveData<MovieDetailsResponse?>()
     val movieDetailsWithCastAndVideos: LiveData<MovieDetailsResponse?> get() = _movieDetailsWithCastAndVideos
+
+    private val _reviews = MutableLiveData<List<Reviews?>?>()
+    val reviews: LiveData<List<Reviews?>?> get()  = _reviews
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> get() = _isLoading
@@ -64,13 +73,13 @@ class MoviesViewModel @Inject constructor(
         try {
             CoroutineScope(Dispatchers.IO).launch {
                 _isLoading.postValue(true)
-                async { fetchPopularMovies() }.await()
-                async { fetchTopRatedMovies() }.await()
-                async { fetchNowPlayingMovies() }.await()
+                async { fetchPopularMovies(3) }.await()
+                async { fetchTopRatedMovies(3) }.await()
+                async { fetchNowPlayingMovies(3) }.await()
                 async {
                     fetchUpcomingMovies()
                 }.await()
-                async { fetchTrendingMovies() }.await()
+                async { fetchTrendingMovies(2) }.await()
             }
         } catch (e : Exception) {
             e.printStackTrace()
@@ -81,24 +90,26 @@ class MoviesViewModel @Inject constructor(
         _isRefreshing.value = isRefreshing
     }
 
-    fun fetchPopularMovies() {
-        repository.fetchPopularMovieDetails(3) { fetchedMovies ->
+    fun fetchPopularMovies(pages: Int) {
+        repository.fetchPopularMovieDetails(pages) { fetchedMovies ->
             if (fetchedMovies != null) {
                 _popularMovies.value = fetchedMovies
             }
         }
     }
 
-    fun fetchTopRatedMovies() {
-        repository.fetchTopRatedMovieDetails(3) { fetchedMovies ->
+    fun fetchTopRatedMovies(pages: Int) {
+        repository.fetchTopRatedMovieDetails(pages) { fetchedMovies ->
             if (fetchedMovies != null) {
                 _topRatedMovies.value = fetchedMovies
             }
         }
     }
 
-    fun fetchNowPlayingMovies() {
-        repository.fetchNowPlayingMovieDetails(3) { fetchedMovies ->
+    fun fetchNowPlayingMovies(pages: Int) {
+//        val pageToFetch = getTotalPagesNowPlaying()
+//        val pagesToFetch = if(pageToFetch > 10) 10 else pageToFetch
+        repository.fetchNowPlayingMovieDetails(pages) { fetchedMovies ->
             if (fetchedMovies != null) {
                 _nowPlaying.value = fetchedMovies
             }
@@ -107,7 +118,7 @@ class MoviesViewModel @Inject constructor(
 
 
     suspend fun fetchUpcomingMovies() {
-        val pages = getTotalPages()
+        val pages = getTotalPagesUpcoming()
         val pageToFetch = if(pages > 10) 10 else 5
         //Log.d("MoviesViewModel", "Total pages1: ${pages}")
         repository.fetchUpcomingMovieDetails(pageToFetch) { fetchedMovies ->
@@ -117,8 +128,8 @@ class MoviesViewModel @Inject constructor(
         }
     }
 
-    fun fetchTrendingMovies() {
-        repository.fetchTrendingMovieDetails(1) { fetchedMovies ->
+    fun fetchTrendingMovies(pages: Int) {
+        repository.fetchTrendingMovieDetails(pages) { fetchedMovies ->
             if (fetchedMovies != null) {
                 _trendingMovies.value = fetchedMovies
             }
@@ -163,7 +174,36 @@ class MoviesViewModel @Inject constructor(
             }
         }
     }
-    suspend fun getTotalPages() : Int  {
+
+    fun fetchSimilarMovies(movieId: Int, pages: Int) {
+        repository.fetchSimilarMovieDetails(movieId, pages) { fetchedMovies ->
+            if (fetchedMovies != null) {
+                _similarMovies.value = fetchedMovies
+            }
+        }
+    }
+
+    fun getReviews(movieId: Int) {
+        repository.getMovieReviews(movieId) { reviewsResponse ->
+            if (reviewsResponse.isSuccessful) {
+                _reviews.value = reviewsResponse.body()?.getResults()
+            }
+        }
+    }
+
+    suspend fun getTotalPagesUpcoming() : Int  {
         return repository.getTotalPagesUpcoming()
+    }
+
+    suspend fun getTotalPagesTopRated() : Int  {
+        return repository.getTotalPagesTopRated()
+    }
+
+    suspend fun getTotalPagesNowPlaying() : Int  {
+        return repository.getTotalPagesNowPlaying()
+    }
+
+    suspend fun getTotalPagesPopular() : Int  {
+        return repository.getTotalPagesPopular()
     }
 }

@@ -24,5 +24,4 @@ object DefaultLocale {
         val languageTag = defaultLocale.toLanguageTag()
         return languageTag
     }
-
 }

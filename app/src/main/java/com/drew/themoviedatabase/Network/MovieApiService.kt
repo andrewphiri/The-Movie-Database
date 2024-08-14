@@ -13,8 +13,6 @@ import retrofit2.http.Query
 interface MovieApiService {
 
     //V3 Movies
-
-    //V3 Movies
     @GET("movie/upcoming")
     fun getTotalPagesUpcoming(
         @Query("api_key") apiKey: String,
@@ -32,17 +30,39 @@ interface MovieApiService {
         @Query("language") language: String,
         @Query ("page") page: Int = 1): Call<MovieResponse?>?
 
+    @GET("movie/top_rated")
+    fun getTotalPagesTopRated(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String): Call <TotalPages?>?
+
     @GET("movie/now_playing")
     fun getNowPlayingMovies(
         @Query("api_key") apiKey: String,
         @Query("language") language: String,
         @Query ("page") page: Int = 1): Call <MovieResponse?>?
 
+    @GET("movie/now_playing")
+    fun getTotalPagesNowPlaying(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String): Call <TotalPages?>?
+
     @GET("movie/popular")
     fun getPopularMovies(
         @Query("api_key") apiKey: String,
         @Query("language") language: String,
         @Query ("page") page: Int = 1): Call <MovieResponse?>?
+
+    @GET("movie/popular")
+    fun getTotalPagesPopular(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String): Call <TotalPages?>?
+
+    @GET("trending/movie/{time_window}")
+    fun getTrendingMovies(
+        @Path ("time_window") timeWindow: String = "day",
+        @Query("language") language: String,
+        @Query("api_key") apiKey: String, ): Call <MovieResponse?>?
+
 
     @GET("movie/{id}")
    fun getMovieDetails(
@@ -77,11 +97,6 @@ interface MovieApiService {
         @Query("language") language: String,
         @Query("api_key") apiKey: String?) : Call <ReviewsResponse?>?
 
-    @GET("trending/movie/{time_window}")
-    fun getTrendingMovies(
-        @Path ("time_window") timeWindow: String = "day",
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String, ): Call <MovieResponse?>?
 
     @GET("movie/{movie_id}/release_dates")
     fun getReleaseDateAndCertification(
@@ -93,7 +108,8 @@ interface MovieApiService {
     fun getSimilarMovies(
         @Path("id") movieId: Int,
         @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call<MovieResponse?>?
+        @Query("api_key") apiKey: String?,
+        @Query ("page") page: Int = 1): Call<MovieResponse?>?
 
     @GET("movie/{movie_id}/credits")
     fun getCast(
@@ -112,84 +128,6 @@ interface MovieApiService {
         @Path("id") movieId: Int,
         @Query("language") language: String,
         @Query("api_key") apiKey: String?): Call <MovieResponse?>?
-
-    //V3 TV
-    @GET("tv/airing_today")
-    fun getTVShowsAiringToday(
-        @Query("api_key") apiKey: String,
-        @Query("language") language: String
-    ): Call <MovieResponse?>?
-
-    @GET("tv/on_the_air")
-    fun getTVShowsOnTheAir(
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String): Call <MovieResponse?>?
-
-    @GET("tv/popular")
-    fun getPopularTVShows(
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String
-    ): Call <MovieResponse?>?
-
-    @GET("tv/top_rated")
-    fun getTopRatedTVShows(
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call<MovieResponse?>?
-
-    @GET("trending/tv/{time_window}")
-    fun getTrendingTVShows(
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String): Call <MovieResponse?>?
-
-    @GET("tv/{series_id}")
-    fun getTVShowDetails(
-        @Path("series_id") tvShowId: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <TVShowDetails?>?
-
-    @GET("tv/{series_id}/videos")
-    fun getTVShowTrailer(
-        @Path("series_id") tvShowId: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <TrailersResponse?>?
-
-    @GET("tv/{series_id}/reviews")
-    fun getTVShowReviews(
-        @Path("series_id") tvShowId: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <ReviewsResponse?>?
-
-    @GET("tv/{series_id}/similar")
-    fun getSimilarTVShows(
-        @Path("series_id") tvShowId: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <TVShowsResponse?>?
-
-    @GET("tv/{series_id}/recommendations")
-    fun getRecommendedTVShows(
-        @Path("series_id") tvShowId: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <TVShowsResponse?>?
-
-    @GET("tv/{series_id}/watch/providers")
-    fun getTVShowProviders(
-        @Path("series_id") tvShowId: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <TVProvidersResponse?>?
-
-    @GET("{series_id}/season/{season_number}")
-    fun getSeasonDetails(
-        @Path("series_id") tvShowId: Int,
-        @Path("season_number") seasonNumber: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <SeasonResponse?>?
-
-    @GET("/tv/{series_id}/season/{season_number}/credits")
-    fun getSeasonCast(
-        @Path("series_id") tvShowId: Int,
-        @Path("season_number") seasonNumber: Int,
-        @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call <CastResponse?>?
 
 
 

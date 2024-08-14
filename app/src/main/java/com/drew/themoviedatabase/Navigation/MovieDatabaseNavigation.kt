@@ -1,11 +1,8 @@
 package com.drew.themoviedatabase.Navigation
 
-import android.util.Log
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -14,16 +11,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.drew.themoviedatabase.screens.Details.DetailsScreen
+import com.drew.themoviedatabase.screens.Details.DetailsMovieScreen
+import com.drew.themoviedatabase.screens.Details.DetailsTVScreen
 import com.drew.themoviedatabase.screens.Details.MovieDetailsScreen
+import com.drew.themoviedatabase.screens.Details.TVDetailsScreen
 import com.drew.themoviedatabase.screens.Home.HomeScreen
 
 @Composable
@@ -39,25 +36,48 @@ fun MovieNavHost(
         ) {
         composable<HomeScreen> {
             HomeScreen(
-                navigateToDetails = { movieId, ageRating, title ->
-                    Log.d("MovieNavHost", "Navigating to movie details: $movieId")
+                navigateToMovieDetails = { movieId ->
                     navController.navigate(
-                        DetailsScreen(
-                            movieId = movieId,
-                            ageRating = ageRating,
-                            title = title
+                        DetailsMovieScreen(
+                            movieId = movieId
+                        )
+                    )
+                },
+                navigateToTVShowDetails = { seriesId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = seriesId,
                         )
                     )
                 }
             )
         }
-        composable<DetailsScreen> {
-            val args = it.toRoute<DetailsScreen>()
+        composable<DetailsMovieScreen> {
+            val args = it.toRoute<DetailsMovieScreen>()
             MovieDetailsScreen(
                 movieId = args.movieId,
-                ageRating = args.ageRating,
-                title = args.title,
-                navigateUp = { navController.navigateUp() }
+                navigateUp = { navController.navigateUp() },
+                navigateToDetails = { movieId ->
+                    navController.navigate(
+                        DetailsMovieScreen(
+                            movieId = movieId,
+                        )
+                    )
+                }
+            )
+        }
+        composable<DetailsTVScreen> {
+            val args = it.toRoute<DetailsTVScreen>()
+            TVDetailsScreen(
+                seriesId = args.seriesId,
+                navigateUp = { navController.navigateUp() },
+                navigateToTVShowDetails = { movieId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = movieId,
+                        )
+                    )
+                }
             )
         }
     }
