@@ -17,6 +17,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.drew.themoviedatabase.screens.Cast.PersonDetailsScreen
+import com.drew.themoviedatabase.screens.Cast.CastDetailsScreen
 import com.drew.themoviedatabase.screens.Details.DetailsMovieScreen
 import com.drew.themoviedatabase.screens.Details.DetailsTVScreen
 import com.drew.themoviedatabase.screens.Details.MovieDetailsScreen
@@ -63,6 +65,14 @@ fun MovieNavHost(
                             movieId = movieId,
                         )
                     )
+                },
+                navigateToCastDetails = {personId ->
+
+                    navController.navigate(
+                        PersonDetailsScreen(
+                            personId = personId
+                        )
+                    )
                 }
             )
         }
@@ -75,6 +85,34 @@ fun MovieNavHost(
                     navController.navigate(
                         DetailsTVScreen(
                             seriesId = movieId,
+                        )
+                    )
+                },
+                navigateToCastDetails = {personId ->
+                    navController.navigate(
+                        PersonDetailsScreen(
+                            personId = personId
+                        )
+                    )
+                }
+            )
+        }
+        composable<PersonDetailsScreen> {
+            val args = it.toRoute<PersonDetailsScreen>()
+            CastDetailsScreen(
+                personId = args.personId,
+                navigateUp = { navController.navigateUp() },
+                navigateToMovieDetails = { movieId ->
+                    navController.navigate(
+                        DetailsMovieScreen(
+                            movieId = movieId,
+                        )
+                    )
+                },
+                navigateToTVShowDetails = { seriesId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = seriesId,
                         )
                     )
                 }

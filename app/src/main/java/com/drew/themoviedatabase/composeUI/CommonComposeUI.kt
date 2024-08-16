@@ -47,8 +47,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.CastMembers
+import com.drew.themoviedatabase.POJO.CombinedCredits
 import com.drew.themoviedatabase.POJO.Crew
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
+import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.formatDuration
@@ -117,18 +119,19 @@ fun ExpandableText(
 @Composable
 fun CastCard(
     modifier: Modifier = Modifier,
-    castMember: CastMembers?
+    castMember: CastMembers?,
+    navigateToCastDetailsScreen: (Int) -> Unit
 ) {
     ElevatedCard(
         modifier = modifier
             .width(120.dp)
             .height(250.dp),
-        onClick = { /*TODO*/ }
+        onClick = { navigateToCastDetailsScreen(castMember?.id ?: 0) }
     ) {
         AsyncImage(
             modifier = Modifier
                 .height(150.dp)
-                .width(100.dp),
+                .width(120.dp),
             model = NetworkClient().getPosterUrl(castMember?.profilePath),
             contentDescription = "${castMember?.name} profile picture",
         )
@@ -361,6 +364,146 @@ fun MovieItem(
     }
 }
 
+@Composable
+fun CombinedCreditsMovieList(
+    modifier: Modifier = Modifier,
+    combinedCredits: List<CombinedCredits?>?,
+    onItemClick: (Int, String) -> Unit,
+    categoryTitle: String,
+    color: Color
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VerticalDivider(
+                modifier = Modifier
+                    .width(6.dp),
+                color = color
+            )
+            Text(
+                text = categoryTitle,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            combinedCredits?.size?.let {
+                items(it) {
+                    combinedCredits.get(it)?.let { credit ->
+                        CombinedCreditsItem(
+                            modifier = modifier,
+                            combinedCredits = credit,
+                            onItemClick = { onItemClick(it, credit.mediaType) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CombinedCreditsItem(
+    modifier: Modifier = Modifier,
+    combinedCredits: CombinedCredits?,
+    onItemClick: (Int) -> Unit
+) {
+    ElevatedCard(
+        modifier = modifier
+            .height(370.dp)
+            .width(150.dp),
+        onClick = {
+            if (combinedCredits?.id != null) {
+                onItemClick(combinedCredits.id)
+            }
+        }
+    ) {
+        AsyncImage(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            model = NetworkClient().getPosterUrl(combinedCredits?.posterPath),
+            contentDescription = "${combinedCredits?.title} poster",
+            placeholder = null
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 8.dp)
+                .weight(0.5f),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                if (combinedCredits?.voteAverage != null) {
+                    Image(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Movie Rating",
+                        colorFilter = ColorFilter.tint(Color.Yellow)
+                    )
+
+                    Text(
+                        text = combinedCredits?.voteAverage?.toBigDecimal()
+                            ?.setScale(1, java.math.RoundingMode.HALF_UP).toString(),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                text = combinedCredits?.title ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (combinedCredits?.releaseDate != null) {
+                    Text(
+                        text = combinedCredits.releaseDate.split('-')[0],
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                if (combinedCredits?.character != null) {
+                    Text(
+                        text = combinedCredits?.character,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+        }
+    }
+}
 /**
  * A composable that displays a YouTube video using a WebView.
  */
@@ -489,7 +632,8 @@ fun YouTubePlayer(
 fun CastList(
     modifier: Modifier = Modifier,
     castMembers: List<CastMembers?>?,
-    crew: List<Crew>?
+    crew: List<Crew>?,
+    navigateToCastDetailsScreen: (Int) -> Unit,
 ) {
     Column(
         modifier = modifier,
@@ -521,7 +665,10 @@ fun CastList(
         ) {
             castMembers?.size?.let {
                 items(it) {
-                    CastCard(castMember = castMembers[it])
+                    CastCard(
+                        castMember = castMembers[it],
+                        navigateToCastDetailsScreen = navigateToCastDetailsScreen
+                    )
                 }
             }
         }
@@ -623,34 +770,39 @@ fun ReviewList(
     reviews: List<Reviews?>?,
     categoryTitle: String = "",
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .padding(start = 8.dp, end = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        VerticalDivider(
+        Row(
             modifier = Modifier
-                .width(6.dp),
-            color = DarkOrange
-        )
-        Text(
-            text = categoryTitle,
-            style = MaterialTheme.typography.titleLarge
-        )
-    }
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        reviews?.size?.let {
-            items(it) { index ->
-                reviews.get(index)?.let { review ->
-                    ReviewItemCard(
-                        modifier = modifier,
-                        reviews = review
-                    )
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VerticalDivider(
+                modifier = Modifier
+                    .width(6.dp),
+                color = DarkOrange
+            )
+            Text(
+                text = categoryTitle,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            reviews?.size?.let {
+                items(it) { index ->
+                    reviews.get(index)?.let { review ->
+                        ReviewItemCard(
+                            modifier = modifier,
+                            reviews = review
+                        )
+                    }
                 }
             }
         }
@@ -664,7 +816,8 @@ fun ReviewItemCard(
 ) {
     ElevatedCard(
         modifier = modifier
-            .height(170.dp).width(300.dp),
+            .height(170.dp)
+            .width(300.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -684,8 +837,75 @@ fun ReviewItemCard(
                 text = reviews.content,
                 maxLines = 7,
                 minLines = 7,
+                style = MaterialTheme.typography.bodySmall,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+fun PhotosList(
+    modifier: Modifier = Modifier,
+    photos: List<Photos?>?,
+    categoryTitle: String,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VerticalDivider(
+                modifier = Modifier
+                    .width(6.dp),
+                color = DarkOrange
+            )
+            Text(
+                text = categoryTitle,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = " ${photos?.size}",
                 style = MaterialTheme.typography.bodySmall
             )
         }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            photos?.size?.let {
+                items(it) { index ->
+                    photos[index]?.let { photo ->
+                        PhotosItem(
+                            modifier = modifier,
+                            movieImages = photo
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+@Composable
+fun PhotosItem(
+    modifier: Modifier = Modifier,
+    movieImages: Photos
+) {
+    ElevatedCard(
+        modifier = modifier
+            .height(150.dp)
+            .width(120.dp),
+    ) {
+        AsyncImage(
+            model = NetworkClient().getPosterUrl(movieImages.filePath) ,
+            contentDescription = "" )
     }
 }

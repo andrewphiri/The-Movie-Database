@@ -20,15 +20,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,13 +41,14 @@ import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Navigation.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
+import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.composeUI.CastList
-import com.drew.themoviedatabase.composeUI.CrewCard
 import com.drew.themoviedatabase.composeUI.ExpandableText
+import com.drew.themoviedatabase.composeUI.PhotosList
 import com.drew.themoviedatabase.composeUI.ReviewList
 import com.drew.themoviedatabase.composeUI.TVShowList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
@@ -69,6 +71,7 @@ fun TVDetailsScreen(
     navigateUp: () -> Unit = {},
     navigateToTVShowDetails: (Int) -> Unit = {},
     tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
+    navigateToCastDetails: (Int) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -82,12 +85,14 @@ fun TVDetailsScreen(
     var tvDetails by remember { mutableStateOf<TVShowDetailsWithCastAndVideos?>(null) }
     var similarTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
     var reviews by remember { mutableStateOf<List<Reviews?>?>(null) }
+    val photos: SnapshotStateList<Photos>? = remember { mutableStateListOf() }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             async { tvShowsViewModel.fetchTVDetailsWithCastAndVideos(seriesId) }.await()
             async { tvShowsViewModel.fetchSimilarTVShows(seriesId, 3) }.await()
             async { tvShowsViewModel.fetchReviews(seriesId) }.await()
+            async { tvShowsViewModel.getPhotos(seriesId) }.await()
         }
     }
 
@@ -102,6 +107,12 @@ fun TVDetailsScreen(
 
     tvShowsViewModel.reviews.observe(lifecycleOwner) {
         reviews = it
+    }
+
+    tvShowsViewModel.tvShowImages.observe(lifecycleOwner) {
+        photos?.addAll(it?.logos ?: emptyList())
+        photos?.addAll(it?.posters ?: emptyList())
+        photos?.addAll(it?.backdrops ?: emptyList())
     }
 
 
@@ -150,7 +161,8 @@ fun TVDetailsScreen(
                 item {
                     CastList(
                         castMembers = tvDetails?.credits?.getCast(),
-                        crew = tvDetails?.credits?.getCrew()
+                        crew = tvDetails?.credits?.getCrew(),
+                        navigateToCastDetailsScreen = navigateToCastDetails
                     )
                 }
 
@@ -175,6 +187,14 @@ fun TVDetailsScreen(
                             reviews = reviews,
                             categoryTitle = "Reviews"
                         )
+                    }
+                }
+
+                if (photos?.isNotEmpty() == true ) {
+                    item {
+                        PhotosList(
+                            photos = photos.shuffled(),
+                            categoryTitle = "Photos" )
                     }
                 }
 

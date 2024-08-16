@@ -129,6 +129,14 @@ interface MovieApiService {
         @Query("language") language: String,
         @Query("api_key") apiKey: String?): Call <MovieResponse?>?
 
+    @GET("movie/{movie_id}/images")
+    fun getMovieImages(
+        @Path("movie_id") movieId: Int,
+        @Query("include_image_language") imageLanguage: String,
+        @Query("language") language: String,
+        @Query("api_key") apiKey: String
+    ): Call<MovieImagesResponse?>?
+
 
 
     //V4 endpoints

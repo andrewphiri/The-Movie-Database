@@ -3,6 +3,7 @@ package com.drew.themoviedatabase.data
 import android.content.res.Resources
 import androidx.core.os.ConfigurationCompat
 import com.drew.themoviedatabase.Network.API_KEY
+import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.ReviewsResponse
 import com.drew.themoviedatabase.Network.TVShowApiService
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
@@ -33,6 +34,7 @@ class TVShowsRepository@Inject constructor(
         Locale("en", "US")
     }
     val defaultLocale = locale.toLanguageTag()
+    private val imageLanguage = systemLocale?.language ?: "en"
 
     private fun fetchTVShows(
         pages: Int,
@@ -195,7 +197,32 @@ class TVShowsRepository@Inject constructor(
                 e.printStackTrace()
                 callback(Response.success(null))
             }
+    }
 
+    fun getTvShowPhotos(movieId: Int, callback: (Response<MovieImagesResponse?>) -> Unit) {
+        try {
+            tvShowApiService.getMovieImages(
+                movieId = movieId,
+                apiKey = API_KEY,
+                imageLanguage = imageLanguage,
+                language = defaultLocale)?.enqueue(object : Callback<MovieImagesResponse?> {
+                override fun onResponse(
+                    p0: Call<MovieImagesResponse?>,
+                    p1: Response<MovieImagesResponse?>
+                ) {
+                    if (p1.isSuccessful) {
+                        callback(p1)
+                    }
+                }
+
+                override fun onFailure(p0: Call<MovieImagesResponse?>, p1: Throwable) {
+                    callback(Response.success(null))
+                }
+            })
+        } catch (e:Exception) {
+            e.printStackTrace()
+            callback(Response.success(null))
+        }
     }
 
 

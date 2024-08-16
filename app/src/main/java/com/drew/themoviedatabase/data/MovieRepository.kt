@@ -6,6 +6,7 @@ import com.drew.themoviedatabase.Network.API_KEY
 import com.drew.themoviedatabase.Network.CastResponse
 import com.drew.themoviedatabase.Network.MovieApiService
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
+import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.MovieReleaseData
 import com.drew.themoviedatabase.Network.MovieResponse
 import com.drew.themoviedatabase.Network.ReviewsResponse
@@ -29,13 +30,14 @@ import javax.inject.Inject
 class MovieRepository @Inject constructor(
     private  val movieApiService: MovieApiService,
 ) {
-    val systemLocale = ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]
-    val locale = if (systemLocale != null) {
+    private val systemLocale = ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]
+    private val locale = if (systemLocale != null) {
         Locale(systemLocale.language, systemLocale.country)
     } else {
         Locale("en", "US")
     }
-    val defaultLocale = locale.toLanguageTag()
+    private val defaultLocale = locale.toLanguageTag()
+    private val imageLanguage = systemLocale?.language ?: "en"
 
     private fun fetchMovies(
         pages: Int,
@@ -301,6 +303,7 @@ class MovieRepository @Inject constructor(
     }
 
     fun getMovieReviews(movieId: Int, callback: (Response<ReviewsResponse?>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 movieApiService.getReviews(movieId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<ReviewsResponse?> {
                     override fun onResponse(
@@ -318,7 +321,37 @@ class MovieRepository @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
                 callback(Response.success(null))
+            }
 
+        }
+    }
+
+    fun getMoviePhotos(movieId: Int, callback: (Response<MovieImagesResponse?>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                movieApiService.getMovieImages(
+                    movieId = movieId,
+                    apiKey = API_KEY,
+                    imageLanguage = imageLanguage,
+                    language = defaultLocale
+                )?.enqueue(object : Callback<MovieImagesResponse?> {
+                    override fun onResponse(
+                        p0: Call<MovieImagesResponse?>,
+                        p1: Response<MovieImagesResponse?>
+                    ) {
+                        if (p1.isSuccessful) {
+                            callback(p1)
+                        }
+                    }
+
+                    override fun onFailure(p0: Call<MovieImagesResponse?>, p1: Throwable) {
+                        callback(Response.success(null))
+                    }
+                })
+            } catch (e: Exception) {
+                e.printStackTrace()
+                callback(Response.success(null))
+            }
         }
     }
 

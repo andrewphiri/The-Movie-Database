@@ -3,8 +3,8 @@ package com.drew.themoviedatabase.screens.Home
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
-import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.POJO.Trailers
@@ -50,6 +50,9 @@ class TVShowsViewModel @Inject constructor(
 
     private val _tvShowsWithCastAndVideos = MutableLiveData<TVShowDetailsWithCastAndVideos?>()
     val tvShowsWithCastAndVideos: LiveData<TVShowDetailsWithCastAndVideos?> get()  = _tvShowsWithCastAndVideos
+
+    private val _tvShowImages = MutableLiveData<MovieImagesResponse?>()
+    val tvShowImages: LiveData<MovieImagesResponse?> get() = _tvShowImages
 
     fun fetchPopularTVShows(pages: Int) {
         repository.fetchPopularTVShowsDetails(pages) { fetchedMovies ->
@@ -120,6 +123,14 @@ class TVShowsViewModel @Inject constructor(
         repository.getTVShowReviews(seriesId) { reviewsResponse ->
             if (reviewsResponse.isSuccessful) {
                 _reviews.value = reviewsResponse.body()?.getResults()
+            }
+        }
+    }
+
+    fun getPhotos(seriesId: Int) {
+        repository.getTvShowPhotos(seriesId) { photosResponse ->
+            if (photosResponse.isSuccessful) {
+                _tvShowImages.value = photosResponse.body()
             }
         }
     }

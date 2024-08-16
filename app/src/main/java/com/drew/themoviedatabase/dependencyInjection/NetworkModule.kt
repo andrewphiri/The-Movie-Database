@@ -1,6 +1,7 @@
 package com.drew.themoviedatabase.dependencyInjection
 
 import com.drew.themoviedatabase.Network.BASE_URL
+import com.drew.themoviedatabase.Network.CastApiService
 import com.drew.themoviedatabase.Network.MovieApiService
 import com.drew.themoviedatabase.Network.TVShowApiService
 import dagger.Module
@@ -31,4 +32,10 @@ object NetworkModule {
     fun provideTVShowApiService(retrofit: Retrofit): TVShowApiService {
         return retrofit.create(TVShowApiService::class.java)
     }
+
+    @Provides
+    fun provideCastApiService(retrofit: Retrofit): CastApiService {
+        return retrofit.create(CastApiService::class.java)
+    }
+
 }

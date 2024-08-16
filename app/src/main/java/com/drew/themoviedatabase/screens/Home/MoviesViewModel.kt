@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
+import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.POJO.CastMembers
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
@@ -67,6 +68,8 @@ class MoviesViewModel @Inject constructor(
     private val _totalPages = MutableLiveData<Int>()
     val totalPages: LiveData<Int> get() = _totalPages
 
+    private val _movieImages = MutableLiveData<MovieImagesResponse?>()
+    val movieImages: LiveData<MovieImagesResponse?> get() = _movieImages
 
 
     init {
@@ -187,6 +190,14 @@ class MoviesViewModel @Inject constructor(
         repository.getMovieReviews(movieId) { reviewsResponse ->
             if (reviewsResponse.isSuccessful) {
                 _reviews.value = reviewsResponse.body()?.getResults()
+            }
+        }
+    }
+
+    fun getPhotos(movieId: Int) {
+        repository.getMoviePhotos(movieId) { photosResponse ->
+            if (photosResponse.isSuccessful) {
+                _movieImages.value = photosResponse.body()
             }
         }
     }

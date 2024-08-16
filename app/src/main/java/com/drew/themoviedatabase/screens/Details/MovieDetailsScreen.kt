@@ -1,16 +1,9 @@
 package com.drew.themoviedatabase.screens.Details
 
-import android.view.ViewGroup
-import android.webkit.WebView
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,51 +11,43 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Navigation.MovieTopAppBar
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.NetworkClient
-import com.drew.themoviedatabase.POJO.CastMembers
-import com.drew.themoviedatabase.POJO.Crew
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
+import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.Utilities.currencyFormatter
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
-import com.drew.themoviedatabase.composeUI.CastCard
 import com.drew.themoviedatabase.composeUI.CastList
-import com.drew.themoviedatabase.composeUI.CrewCard
 import com.drew.themoviedatabase.composeUI.ExpandableText
+import com.drew.themoviedatabase.composeUI.PhotosList
 import com.drew.themoviedatabase.composeUI.ReviewList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
 import com.drew.themoviedatabase.formatDuration
@@ -84,7 +69,8 @@ fun MovieDetailsScreen(
     canNavigateBack: Boolean = true,
     navigateUp: () -> Unit = {},
     navigateToDetails: (Int) -> Unit = {},
-    moviesViewModel: MoviesViewModel = hiltViewModel()
+    moviesViewModel: MoviesViewModel = hiltViewModel(),
+    navigateToCastDetails: (Int) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -98,12 +84,15 @@ fun MovieDetailsScreen(
     var movieDetails by remember { mutableStateOf<MovieDetailsResponse?>(null) }
     var similarMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
     var reviews by remember { mutableStateOf<List<Reviews?>?>(null) }
+    val photos: SnapshotStateList<Photos>? = remember { mutableStateListOf()}
+
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
            async { moviesViewModel.fetchMovieDetailsWithCastAndVideos(movieId) }.await()
             async { moviesViewModel.fetchSimilarMovies(movieId = movieId, pages = 1) }.await()
             async { moviesViewModel.getReviews(movieId) }.await()
+            async { moviesViewModel.getPhotos(movieId) }.await()
         }
     }
 
@@ -118,6 +107,12 @@ fun MovieDetailsScreen(
 
     moviesViewModel.reviews.observe(lifecycleOwner) {
         reviews = it
+    }
+
+    moviesViewModel.movieImages.observe(lifecycleOwner) {
+        photos?.addAll(it?.logos ?: emptyList())
+        photos?.addAll(it?.posters ?: emptyList())
+        photos?.addAll(it?.backdrops ?: emptyList())
     }
 
 
@@ -166,7 +161,8 @@ fun MovieDetailsScreen(
                 item {
                     CastList(
                         castMembers = movieDetails?.credits?.getCast(),
-                        crew = movieDetails?.credits?.getCrew()
+                        crew = movieDetails?.credits?.getCrew(),
+                        navigateToCastDetailsScreen = navigateToCastDetails
                     )
                 }
                 item {
@@ -174,14 +170,17 @@ fun MovieDetailsScreen(
                         movieDetails = movieDetails
                     )
                 }
-                item {
-                    MovieList(
-                        movies = similarMovies,
-                        color = Color.Cyan,
-                        categoryTitle = "More like this",
-                        onItemClick = navigateToDetails
-                    )
-                }
+                    if (similarMovies?.isNotEmpty() == true) {
+                        item {
+                            MovieList(
+                                movies = similarMovies,
+                                color = Color.Cyan,
+                                categoryTitle = "More like this",
+                                onItemClick = navigateToDetails
+                            )
+                        }
+                    }
+
 
                     if (reviews?.isNotEmpty() == true) {
                         item {
@@ -189,6 +188,14 @@ fun MovieDetailsScreen(
                                 reviews = reviews,
                                 categoryTitle = "Reviews"
                             )
+                        }
+                    }
+
+                    if (photos?.isNotEmpty() == true ) {
+                        item {
+                            PhotosList(
+                                photos = photos.shuffled(),
+                                categoryTitle = "Photos" )
                         }
                     }
             }
@@ -277,7 +284,7 @@ fun MovieDetailsCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if(isExpanded) 220.dp else 170.dp),
+                .height(if (isExpanded) 220.dp else 170.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {

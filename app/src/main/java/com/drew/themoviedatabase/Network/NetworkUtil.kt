@@ -23,9 +23,9 @@ class NetworkClient {
         return retrofit
     }
 
-    fun getPosterUrl(posterPath: String?): String {
+    fun getPosterUrl(posterPath: String?, imageSize: String = IMAGE_SIZE): String {
         return if (!posterPath.isNullOrEmpty()) {
-            "$IMAGE_BASE_URL$IMAGE_SIZE$posterPath"
+            "$IMAGE_BASE_URL$imageSize$posterPath"
         } else {
             "No image available"
         }

@@ -85,6 +85,14 @@ interface TVShowApiService {
         @Query("language") language: String,
         @Query("api_key") apiKey: String?): Call<TVShowsResponse?>?
 
+    @GET("movie/{series_id}/images")
+    fun getMovieImages(
+        @Path("series_id") movieId: Int,
+        @Query("include_image_language") imageLanguage: String,
+        @Query("language") language: String,
+        @Query("api_key") apiKey: String
+    ): Call<MovieImagesResponse?>?
+
     @GET("tv/{series_id}/watch/providers")
     fun getTVShowProviders(
         @Path("series_id") tvShowId: Int,
