@@ -201,7 +201,7 @@ class TVShowsRepository@Inject constructor(
 
     fun getTvShowPhotos(movieId: Int, callback: (Response<MovieImagesResponse?>) -> Unit) {
         try {
-            tvShowApiService.getMovieImages(
+            tvShowApiService.getTVShowImages(
                 movieId = movieId,
                 apiKey = API_KEY,
                 imageLanguage = imageLanguage,

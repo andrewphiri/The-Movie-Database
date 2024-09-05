@@ -1,8 +1,12 @@
 package com.drew.themoviedatabase.screens.Details
 
+import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,9 +36,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -41,21 +57,29 @@ import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Photos
+import com.drew.themoviedatabase.POJO.Provider
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
+import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.Utilities.currencyFormatter
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
+import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.composeUI.CastList
 import com.drew.themoviedatabase.composeUI.ExpandableText
+import com.drew.themoviedatabase.composeUI.MovieList
+import com.drew.themoviedatabase.composeUI.OverviewText
 import com.drew.themoviedatabase.composeUI.PhotosList
+import com.drew.themoviedatabase.composeUI.ProvidersList
+import com.drew.themoviedatabase.composeUI.RatingsAndVotes
 import com.drew.themoviedatabase.composeUI.ReviewList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
 import com.drew.themoviedatabase.formatDuration
-import com.drew.themoviedatabase.screens.Home.MovieList
 import com.drew.themoviedatabase.screens.Home.MoviesViewModel
+import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import java.math.RoundingMode
 
 @Serializable
 data class DetailsMovieScreen(
@@ -71,6 +95,7 @@ fun MovieDetailsScreen(
     navigateToDetails: (Int) -> Unit = {},
     moviesViewModel: MoviesViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
+    navigateToReviews: (Int) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -158,6 +183,22 @@ fun MovieDetailsScreen(
                     )
                 }
 
+                    if (movieDetails?.watchProviders?.results?.isNotEmpty() == true) {
+
+                        item {
+                            MovieWatchProviderList(
+                                movie = movieDetails
+                            )
+                        }
+                    }
+
+                    item {
+                        RatingsAndVotes(
+                            voteAverage = movieDetails?.voteAverage,
+                            voteCount = movieDetails?.voteCount
+                        )
+                    }
+
                 item {
                     CastList(
                         castMembers = movieDetails?.credits?.getCast(),
@@ -186,7 +227,8 @@ fun MovieDetailsScreen(
                         item {
                             ReviewList(
                                 reviews = reviews,
-                                categoryTitle = "Reviews"
+                                categoryTitle = "Reviews",
+                                onItemClick = {navigateToReviews(movieId)}
                             )
                         }
                     }
@@ -284,7 +326,7 @@ fun MovieDetailsCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (isExpanded) 220.dp else 170.dp),
+                .height(170.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -304,13 +346,22 @@ fun MovieDetailsCard(
 //                text = movieDetails?.overview ?: "",
 //                style = MaterialTheme.typography.bodySmall
 //            )
-            ExpandableText(
-                overview = finalText,
-                isExpanded = isExpanded,
-                isClickable = isClickable,
-                onExpandClick = { isExpanded = !isExpanded },
-                onClickable = { isClickable = true })
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (movieDetails?.tagline != null) {
+                    Text(
+                        text = movieDetails.tagline,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+
+                OverviewText(
+                    overview = movieDetails?.overview ?: "",
+                )
+            }
         }
+
 
     }
 }
@@ -385,5 +436,95 @@ fun OtherMovieDetailsCard(
         }
 
     }
+}
+
+@Composable
+fun MovieWatchProviderList(
+    modifier: Modifier = Modifier,
+    movie: MovieDetailsResponse?,
+) {
+    val uriHandler = LocalUriHandler.current
+    val watchRegion = getWatchRegion()
+    val watchProvidersBuy = movie?.watchProviders?.results?.get(watchRegion)?.buy?.toList()
+    val watchProvidersRent = movie?.watchProviders?.results?.get(watchRegion)?.rent?.toList()
+    val watchProvidersFlatRate = movie?.watchProviders?.results?.get(watchRegion)?.flatrate?.toList()
+
+    val allProviders: SnapshotStateList<Provider>? = remember { mutableStateListOf() }
+    if (watchProvidersRent != null) {
+        allProviders?.addAll(watchProvidersRent)
+    }
+    if (watchProvidersBuy != null) {
+        allProviders?.addAll(watchProvidersBuy)
+    }
+    if (watchProvidersFlatRate != null) {
+        allProviders?.addAll(watchProvidersFlatRate)
+    }
+    if (allProviders != null) {
+        val link = movie?.watchProviders?.results?.get(watchRegion)?.link ?: ""
+        val attribution = buildAnnotatedString {
+            append("Watch providers data provided by ")
+            withStyle(style = androidx.compose.ui.text.SpanStyle(fontStyle = FontStyle.Italic, fontWeight = FontWeight.Bold)) {
+                append("justWatch. ")
+            }
+        }
+
+        val justWatchAttribution = buildAnnotatedString {
+            append(attribution)
+            append("For more details, ")
+             pushStringAnnotation("URL", annotation = link)
+            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.Cyan, fontStyle = FontStyle.Italic)) {
+                append("visit the TMDb website.")
+            }
+            pop()
+        }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .padding(start = 8.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                VerticalDivider(
+                    modifier = Modifier
+                        .width(6.dp),
+                    color = DarkOrange
+                )
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = "Watch",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+
+            ProvidersList(
+                modifier = modifier,
+                providers = allProviders.toSet().toList().sortedBy { it.displayPriority },
+                size = 30.dp
+            )
+        }
+        Text(
+            modifier = Modifier
+                .padding(8.dp)
+                .clickable {
+                    uriHandler.openUri(link)
+                },
+            text = justWatchAttribution,
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+    }
+}
+
+
+
+@Composable
+@Preview(showBackground = true)
+fun UserScoreItemPreview() {
+//    UserScoreItem()
 }
 

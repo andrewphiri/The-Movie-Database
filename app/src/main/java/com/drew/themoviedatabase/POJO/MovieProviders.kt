@@ -2,13 +2,10 @@ package com.drew.themoviedatabase.POJO
 
 import com.google.gson.annotations.SerializedName
 
-data class MovieProviders(
-    val id: Int,
-    val results: Map<String, RegionProviders>
-)
 
-data class RegionProviders(
+data class MovieProviders(
     val link: String,
+    val flatrate: List<Provider>,
     val buy: List<Provider>,
     val rent: List<Provider>
 )

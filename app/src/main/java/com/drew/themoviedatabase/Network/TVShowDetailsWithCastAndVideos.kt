@@ -59,4 +59,6 @@ data class TVShowDetailsWithCastAndVideos(
     val credits: CastResponse,
     @SerializedName("videos")
     val videos: TrailersResponse,
+    @SerializedName("watch/providers")
+    val watchProviders: TVProvidersResponse
 )

@@ -1,9 +1,11 @@
 package com.drew.themoviedatabase.screens.Details
 
 import android.content.res.Resources
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +19,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,9 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.os.ConfigurationCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,17 +49,23 @@ import com.drew.themoviedatabase.Navigation.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
 import com.drew.themoviedatabase.POJO.Photos
+import com.drew.themoviedatabase.POJO.Provider
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
+import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.composeUI.CastList
 import com.drew.themoviedatabase.composeUI.ExpandableText
+import com.drew.themoviedatabase.composeUI.OverviewText
 import com.drew.themoviedatabase.composeUI.PhotosList
+import com.drew.themoviedatabase.composeUI.ProvidersList
+import com.drew.themoviedatabase.composeUI.RatingsAndVotes
 import com.drew.themoviedatabase.composeUI.ReviewList
 import com.drew.themoviedatabase.composeUI.TVShowList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
 import com.drew.themoviedatabase.screens.Home.TVShowsViewModel
+import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -72,6 +85,7 @@ fun TVDetailsScreen(
     navigateToTVShowDetails: (Int) -> Unit = {},
     tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
+    navigateToReviews: (Int) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -95,7 +109,6 @@ fun TVDetailsScreen(
             async { tvShowsViewModel.getPhotos(seriesId) }.await()
         }
     }
-
 
     tvShowsViewModel.tvShowsWithCastAndVideos.observe(lifecycleOwner) {
         tvDetails = it
@@ -157,15 +170,29 @@ fun TVDetailsScreen(
                         isTrailersEmpty = isTrailersEmpty
                     )
                 }
-
+                if (tvDetails?.watchProviders?.results?.isNotEmpty() == true) {
+                    item {
+                        TVWatchProviderList(
+                            tvShow = tvDetails
+                        )
+                    }
+                }
                 item {
-                    CastList(
-                        castMembers = tvDetails?.credits?.getCast(),
-                        crew = tvDetails?.credits?.getCrew(),
-                        navigateToCastDetailsScreen = navigateToCastDetails
+                    RatingsAndVotes(
+                        voteAverage = tvDetails?.voteAverage,
+                        voteCount = tvDetails?.voteCount
                     )
                 }
 
+                if (tvDetails?.credits?.getCast()?.isNotEmpty() == true) {
+                    item {
+                        CastList(
+                            castMembers = tvDetails?.credits?.getCast(),
+                            crew = tvDetails?.credits?.getCrew(),
+                            navigateToCastDetailsScreen = navigateToCastDetails
+                        )
+                    }
+                }
 
                 item {
                     OtherTVDetailsCard(
@@ -173,19 +200,22 @@ fun TVDetailsScreen(
                     )
                 }
 
-                item {
-                    TVShowList(
-                        tvShows = similarTVShows,
-                        onItemClick = navigateToTVShowDetails,
-                        categoryTitle = "More like this",
-                        color = Color.Red )
+                if (similarTVShows?.isNotEmpty() == true) {
+                    item {
+                        TVShowList(
+                            tvShows = similarTVShows,
+                            onItemClick = navigateToTVShowDetails,
+                            categoryTitle = "More like this",
+                            color = Color.Red )
+                    }
                 }
 
                 if (reviews?.isNotEmpty() == true) {
                     item {
                         ReviewList(
                             reviews = reviews,
-                            categoryTitle = "Reviews"
+                            categoryTitle = "Reviews",
+                            onItemClick = { navigateToReviews(seriesId) }
                         )
                     }
                 }
@@ -197,9 +227,7 @@ fun TVDetailsScreen(
                             categoryTitle = "Photos" )
                     }
                 }
-
             }
-
         }
     }
 }
@@ -280,13 +308,12 @@ fun TVDetailsCard(
                     videoId = findPreferredVideo(trailers) ?: ""
                 )
             }
-
         }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if(isExpanded) 220.dp else 170.dp),
+                .height(170.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -298,20 +325,20 @@ fun TVDetailsCard(
                 contentDescription = "${tvShow?.name} poster",
                 placeholder = null
             )
-//            Text(
-//                modifier = Modifier
-//                    .fillMaxHeight()
-//                    .fillMaxWidth()
-//                    .padding(8.dp),
-//                text = movieDetails?.overview ?: "",
-//                style = MaterialTheme.typography.bodySmall
-//            )
-            ExpandableText(
-                overview = finalText,
-                isExpanded = isExpanded,
-                isClickable = isClickable,
-                onExpandClick = { isExpanded = !isExpanded },
-                onClickable = { isClickable = true })
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (tvShow?.tagline != null) {
+                    Text(
+                        text = tvShow.tagline,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+               OverviewText(
+                   overview = tvShow?.overview ?: "",
+               )
+            }
+
         }
     }
 }
@@ -396,5 +423,87 @@ fun OtherTVDetailsCard(
 
         }
 
+    }
+}
+
+@Composable
+fun TVWatchProviderList(
+    modifier: Modifier = Modifier,
+    tvShow: TVShowDetailsWithCastAndVideos?,
+) {
+    val uriHandler = LocalUriHandler.current
+    val watchRegion = getWatchRegion()
+    val watchProvidersBuy = tvShow?.watchProviders?.results?.get(watchRegion)?.buy?.toList()
+    val watchProvidersRent = tvShow?.watchProviders?.results?.get(watchRegion)?.rent?.toList()
+    val watchProvidersFlatrate = tvShow?.watchProviders?.results?.get(watchRegion)?.flatrate?.toList()
+    val allProviders: SnapshotStateList<Provider>? = remember { mutableStateListOf() }
+    if (watchProvidersRent != null) {
+        allProviders?.addAll(watchProvidersRent)
+    }
+    if (watchProvidersBuy != null) {
+        allProviders?.addAll(watchProvidersBuy)
+    }
+    if (watchProvidersFlatrate != null) {
+        allProviders?.addAll(watchProvidersFlatrate)
+    }
+    if (allProviders != null) {
+        val link = tvShow?.watchProviders?.results?.get(watchRegion)?.link ?: ""
+        val attribution = buildAnnotatedString {
+            append("Watch providers data provided by ")
+            withStyle(style = androidx.compose.ui.text.SpanStyle(fontStyle = FontStyle.Italic, fontWeight = FontWeight.Bold)) {
+                append("justWatch. ")
+            }
+        }
+
+        val justWatchAttribution = buildAnnotatedString {
+            append(attribution)
+            append("For more details, ")
+            pushStringAnnotation("URL", annotation = link)
+            withStyle(style = androidx.compose.ui.text.SpanStyle(color = Color.Cyan, fontStyle = FontStyle.Italic)) {
+                append("visit the TMDb website.")
+            }
+            pop()
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .padding(start = 8.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                VerticalDivider(
+                    modifier = Modifier
+                        .width(6.dp),
+                    color = DarkOrange
+                )
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = "Watch",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+
+            ProvidersList(
+                modifier = modifier,
+                providers = allProviders.toSet().toList().sortedBy { it.displayPriority },
+                size = 44.dp
+            )
+
+            Text(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clickable {
+                        uriHandler.openUri(link)
+                    },
+                text = justWatchAttribution,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }

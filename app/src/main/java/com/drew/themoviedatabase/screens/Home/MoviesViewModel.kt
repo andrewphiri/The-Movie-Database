@@ -82,7 +82,7 @@ class MoviesViewModel @Inject constructor(
                 async {
                     fetchUpcomingMovies()
                 }.await()
-                async { fetchTrendingMovies(2) }.await()
+                async { fetchTrendingMovies() }.await()
             }
         } catch (e : Exception) {
             e.printStackTrace()
@@ -131,8 +131,8 @@ class MoviesViewModel @Inject constructor(
         }
     }
 
-    fun fetchTrendingMovies(pages: Int) {
-        repository.fetchTrendingMovieDetails(pages) { fetchedMovies ->
+    fun fetchTrendingMovies() {
+        repository.fetchTrendingMovieDetails(1) { fetchedMovies ->
             if (fetchedMovies != null) {
                 _trendingMovies.value = fetchedMovies
             }

@@ -44,5 +44,7 @@ data class MovieDetailsResponse(
     @SerializedName("videos")
     val videos: TrailersResponse,
     @SerializedName("release_dates")
-    val certifications: MovieReleaseData
+    val certifications: MovieReleaseData,
+    @SerializedName("watch/providers")
+    val watchProviders: MovieProvidersResponse
 )

@@ -1,6 +1,8 @@
 package com.drew.themoviedatabase.POJO
 
 import com.drew.themoviedatabase.Network.ContentRatingResponse
+import com.drew.themoviedatabase.Network.MovieProvidersResponse
+import com.drew.themoviedatabase.Network.TVProvidersResponse
 import com.google.gson.annotations.SerializedName
 
 data class TVShowDetails(
@@ -49,7 +51,9 @@ data class TVShowDetails(
     @SerializedName("tagline")
     val tagline: String? = null,
     @SerializedName("content_ratings")
-    val contentRatings: ContentRatingResponse?
+    val contentRatings: ContentRatingResponse?,
+    @SerializedName("watch/providers")
+    val watchProviders: TVProvidersResponse
 )
 
 data class TVGenre(

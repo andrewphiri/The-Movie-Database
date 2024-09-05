@@ -30,6 +30,22 @@ interface MovieApiService {
         @Query("language") language: String,
         @Query ("page") page: Int = 1): Call<MovieResponse?>?
 
+    @GET("discover/movie")
+    fun getMoviesByGenre(
+        @Query("api_key") apiKey: String?,
+        @Query("language") language: String,
+        @Query("with_genres") genreId: Int,
+        @Query ("page") page: Int = 1
+    ): Call<MovieResponse?>?
+
+    @GET("discover/movie")
+    fun getMoviesByProviders(
+        @Query("api_key") apiKey: String?,
+        @Query("language") language: String,
+        @Query("with_watch_providers") providerId: Int,
+        @Query ("page") page: Int = 1
+    ) : Call <MovieResponse?>?
+
     @GET("movie/top_rated")
     fun getTotalPagesTopRated(
         @Query("api_key") apiKey: String,
@@ -75,14 +91,14 @@ interface MovieApiService {
       @Path("id") movieId: Int?,
       @Query("api_key") apiKey: String?,
       @Query("language") language: String,
-      @Query("append_to_response") appendToResponse: String = "release_dates"): Call <MovieDetailsReleaseData?>?
+      @Query("append_to_response") appendToResponse: String = "release_dates,watch/providers"): Call <MovieDetailsReleaseData?>?
 
     @GET("movie/{id}")
     fun getMovieDetailsWithCastAndVideos(
        @Path("id") movieId: Int,
        @Query("api_key") apiKey: String,
        @Query("language") language: String,
-       @Query("append_to_response") appendToResponse: String = "credits,videos,release_dates"
+       @Query("append_to_response") appendToResponse: String = "credits,videos,release_dates,watch/providers"
     ): Call<MovieDetailsResponse?>
 
     @GET("movie/{id}/videos")
@@ -121,7 +137,7 @@ interface MovieApiService {
     fun getMovieProviders(
         @Path("id") movieId: Int,
         @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call<MovieProviders?>?
+        @Query("api_key") apiKey: String?): Call<MovieProvidersResponse?>?
 
     @GET("movie/{movie_id}/recommendations")
     fun getRecommendedMovies(

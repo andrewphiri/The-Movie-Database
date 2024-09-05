@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.screens.Cast
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -23,14 +25,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Navigation.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.PersonDetails
+import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.composeUI.CombinedCreditsMovieList
 import com.drew.themoviedatabase.composeUI.PhotosList
 import com.drew.themoviedatabase.ui.theme.DarkOrange
@@ -56,6 +62,7 @@ fun CastDetailsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var personDetails by remember { mutableStateOf<PersonDetails?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var isBiographyShowing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -99,7 +106,10 @@ fun CastDetailsScreen(
                     item {
                         personDetails?.let {
                             CastDetailItem(
-                                personDetails = it
+                                personDetails = it,
+                                onBiographyClick = { isBiographyShowing = true },
+                                onDismiss = { isBiographyShowing = false },
+                                isBiographyShowing = isBiographyShowing
                             )
                         }
                     }
@@ -134,7 +144,10 @@ fun CastDetailsScreen(
 @Composable
 fun CastDetailItem(
     modifier: Modifier = Modifier,
-    personDetails: PersonDetails?
+    personDetails: PersonDetails?,
+    onBiographyClick: () -> Unit,
+    isBiographyShowing: Boolean,
+    onDismiss: () -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -161,23 +174,32 @@ fun CastDetailItem(
         ){
             if (personDetails != null) {
                 AsyncImage(
+                    modifier = Modifier.weight(1f, true),
                     model = NetworkClient().getPosterUrl(personDetails.profilePath, imageSize = "w500"),
                     contentDescription = "${personDetails.name} profile picture",
-                    placeholder = null
+                    placeholder = painterResource(R.drawable.baseline_person_24)
                 )
             }
 
             Column (
+                modifier = Modifier.weight(1f, true),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (personDetails != null) {
                     Text(
+                        modifier = Modifier.clickable(onClick = onBiographyClick),
                         text = personDetails.biography ?: "",
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 9,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+
+                BiographyDialog(
+                    isBiographyShowing = isBiographyShowing,
+                    onDismiss = onDismiss,
+                    biography = personDetails?.biography ?: ""
+                )
 
                 Column (
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -206,8 +228,35 @@ fun CastDetailItem(
                         )
                     }
                 }
+            }
+        }
+    }
+}
 
-
+@Composable
+fun BiographyDialog(
+    modifier: Modifier = Modifier,
+    isBiographyShowing: Boolean,
+    onDismiss: () -> Unit,
+    biography: String
+) {
+    if (isBiographyShowing) {
+        Dialog(
+            onDismissRequest = onDismiss
+        ) {
+            Card(
+                modifier = modifier,
+                shape = MaterialTheme.shapes.extraLarge
+            ) {
+                LazyColumn{
+                    item {
+                        Text(
+                            modifier = Modifier.padding(16.dp),
+                            text = biography,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
             }
         }
     }

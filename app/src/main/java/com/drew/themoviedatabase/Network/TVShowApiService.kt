@@ -51,7 +51,7 @@ interface TVShowApiService {
         @Path("series_id") tvShowId: Int,
         @Query("language") language: String,
         @Query("api_key") apiKey: String?,
-        @Query("append_to_response") appendToResponse: String = "content_ratings"): Call<TVShowDetails?>?
+        @Query("append_to_response") appendToResponse: String = "content_ratings,watch/providers"): Call<TVShowDetails?>?
 
     @GET("tv/{series_id}")
     fun getTVShowDetailsWithCastAndVideos(
@@ -85,8 +85,8 @@ interface TVShowApiService {
         @Query("language") language: String,
         @Query("api_key") apiKey: String?): Call<TVShowsResponse?>?
 
-    @GET("movie/{series_id}/images")
-    fun getMovieImages(
+    @GET("tv/{series_id}/images")
+    fun getTVShowImages(
         @Path("series_id") movieId: Int,
         @Query("include_image_language") imageLanguage: String,
         @Query("language") language: String,

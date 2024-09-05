@@ -29,18 +29,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        CoroutineScope(Dispatchers.IO).launch {
-//            viewModel.fetchPopularMovies()
-//        }
-//        CoroutineScope(Dispatchers.IO).launch {
-//            viewModel.fetchTopRatedMovies()
-//        }
-//        CoroutineScope(Dispatchers.IO).launch {
-//            viewModel.fetchNowPlayingMovies()
-//        }
-//        CoroutineScope(Dispatchers.IO).launch {
-//            viewModel.fetchUpcomingMovies()
-//        }
         enableEdgeToEdge()
         setContent {
             TheMovieDatabaseTheme {

@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.POJO
 
+import com.drew.themoviedatabase.Network.MovieProvidersResponse
 import com.drew.themoviedatabase.Network.MovieReleaseData
 import com.google.gson.annotations.SerializedName
 
@@ -38,5 +39,7 @@ data class MovieDetailsReleaseData(
     @SerializedName("vote_count")
     val voteCount: Int,
     @SerializedName("release_dates")
-   val certifications: MovieReleaseData
+   val certifications: MovieReleaseData,
+    @SerializedName("watch/providers")
+    val watchProviders: MovieProvidersResponse
 )

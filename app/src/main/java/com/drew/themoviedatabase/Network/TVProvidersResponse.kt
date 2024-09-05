@@ -5,19 +5,17 @@ import com.google.gson.annotations.SerializedName
 
 data class TVProvidersResponse(
     val id: Int,
-    val results: Map<String, CountryResults>
+    val results: Map<String, TVProviders>
 )
 
 
-data class CountryResults(
+data class TVProviders(
     val link: String,
     val flatrate: List<Provider>?,
     val ads: List<Provider>?,
     val buy: List<Provider>?,
+    val rent: List<Provider>?,
     val free: List<Provider>?
 )
 
-data class Response(
-    val id: Int,
-    val results: Map<String, CountryResults>
-)
+
