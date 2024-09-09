@@ -3,12 +3,14 @@ package com.drew.themoviedatabase.screens.Home
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.POJO.Trailers
-import com.drew.themoviedatabase.data.TVShowsRepository
+import com.drew.themoviedatabase.repository.TVShows.TVShowsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,17 +20,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TVShowsViewModel @Inject constructor(
-    private val repository: TVShowsRepository
+    private val repository: TVShowsRepository,
 ) : ViewModel() {
 
-    init {
-        CoroutineScope(Dispatchers.IO).launch {
-            async { fetchPopularTVShows(3) }.await()
-            async { fetchTopRatedTVShows(3) }.await()
-            async { fetchOnTheAirTVShows(3) }.await()
-            async { fetchAiringTodayTVShows(3) }.await()
-        }
-    }
+
+
+    val tvShowsPopular = repository.getPopularTVShows().cachedIn(viewModelScope)
+    val tvShowsTopRated = repository.getTopRatedTVShows().cachedIn(viewModelScope)
+    val tvShowsOnTheAir = repository.getOnTheAirTVShows().cachedIn(viewModelScope)
+    val tvShowsAiringToday = repository.getAiringTodayTVShows().cachedIn(viewModelScope)
+
 
     private val _onTheAirTVShows = MutableLiveData<List<TVShowDetails?>?>()
     val onTheAirTVShows: LiveData<List<TVShowDetails?>?> get()  = _onTheAirTVShows

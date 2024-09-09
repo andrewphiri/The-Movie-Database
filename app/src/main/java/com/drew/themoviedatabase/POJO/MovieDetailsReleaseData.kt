@@ -39,7 +39,7 @@ data class MovieDetailsReleaseData(
     @SerializedName("vote_count")
     val voteCount: Int,
     @SerializedName("release_dates")
-   val certifications: MovieReleaseData,
+    val certifications: MovieReleaseData,
     @SerializedName("watch/providers")
     val watchProviders: MovieProvidersResponse
 )

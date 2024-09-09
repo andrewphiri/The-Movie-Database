@@ -1,7 +1,8 @@
-package com.drew.themoviedatabase.data
+package com.drew.themoviedatabase.repository.TVShows
 
-import android.content.res.Resources
-import androidx.core.os.ConfigurationCompat
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.drew.themoviedatabase.Network.API_KEY
 import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.ReviewsResponse
@@ -12,29 +13,52 @@ import com.drew.themoviedatabase.Network.TotalPages
 import com.drew.themoviedatabase.Network.TrailersResponse
 import com.drew.themoviedatabase.POJO.TVShow
 import com.drew.themoviedatabase.POJO.TVShowDetails
+import com.drew.themoviedatabase.Utilities.defaultLocale
+import com.drew.themoviedatabase.Utilities.imageLanguage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.Locale
 import javax.inject.Inject
 
 class TVShowsRepository@Inject constructor(
     val tvShowApiService: TVShowApiService) {
 
-    val systemLocale = ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]
-    val locale = if (systemLocale != null) {
-        Locale(systemLocale.language, systemLocale.country)
-    } else {
-        Locale("en", "US")
+    fun getTopRatedTVShows() : Flow<PagingData<TVShowDetails>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { TopShowsPagingSource(this) }
+        ).flow
     }
-    val defaultLocale = locale.toLanguageTag()
-    private val imageLanguage = systemLocale?.language ?: "en"
+
+    fun getPopularTVShows() : Flow<PagingData<TVShowDetails>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { PopularShowsPagingSource(this) }
+        ).flow
+    }
+
+    fun getOnTheAirTVShows() : Flow<PagingData<TVShowDetails>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { OnTheAirShowsPagingSource(this) }
+        ).flow
+    }
+
+    fun getAiringTodayTVShows() : Flow<PagingData<TVShowDetails>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { AiringTodayPagingSource(this) }
+        ).flow
+    }
+
 
     private fun fetchTVShows(
         pages: Int,
@@ -72,6 +96,72 @@ class TVShowsRepository@Inject constructor(
         }
     }
 
+    private suspend fun fetchTVShows(
+        pages: Int,
+        apiCall: suspend (Int) -> Response<TVShowsResponse?>?,
+
+        ) : List<TVShow?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    try {
+                        val response = apiCall(pages)
+                        if (response?.isSuccessful == true) {
+                            response.body()?.getTVShows()
+                        } else {
+                            null
+                        }
+                    } catch (e : Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                }
+            }
+
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private suspend fun fetchTVShowDetails(
+        pages: Int,
+        apiCall: suspend (Int) -> Response<TVShowsResponse?>?
+    ) : List<TVShowDetails?>? {
+        return try {
+            val shows = fetchTVShows(pages = pages, apiCall = apiCall)
+            if (shows != null) {
+                coroutineScope {
+                    val tvshow = shows.map { movie ->
+                        async(Dispatchers.IO) {
+                            try {
+                                val response = tvShowApiService.getTVShowDetailsWithContentRatings(
+                                    movie?.id, apiKey = API_KEY, language = defaultLocale())?.execute()
+
+                                if (response?.isSuccessful == true) {
+                                    response.body()
+                                } else {
+                                    null
+                                }
+                            } catch (e:Exception) {
+                                e.printStackTrace()
+                                null
+                            }
+                        }
+                    }
+                    tvshow.awaitAll()
+                }
+            } else {
+                null
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     private fun fetchTVShowDetails(
         pages: Int,
         apiCall: suspend (Int) -> Response<TVShowsResponse?>?,
@@ -85,7 +175,7 @@ class TVShowsRepository@Inject constructor(
                         val jobs = tvShows.map { tvShow ->
                             async {
                                 try {
-                                    val response = tvShowApiService.getTVShowDetailsWithContentRatings(tvShow.id, apiKey = API_KEY, language = defaultLocale)?.execute()
+                                    val response = tvShowApiService.getTVShowDetailsWithContentRatings(tvShow.id, apiKey = API_KEY, language = defaultLocale())?.execute()
 
                                     if (response?.isSuccessful == true) {
                                         response.body()
@@ -119,11 +209,23 @@ class TVShowsRepository@Inject constructor(
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = API_KEY, language = defaultLocale, page = page)?.execute() },
+                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = API_KEY, language = defaultLocale(), page = page)?.execute() },
                 callback = callback,
             )
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    suspend fun fetchPopularTVShowsDetails(pages: Int) : List<TVShowDetails?>? {
+       return try {
+            fetchTVShowDetails(
+                pages = pages,
+                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = API_KEY, language = defaultLocale(), page = page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+           null
         }
     }
 
@@ -131,20 +233,31 @@ class TVShowsRepository@Inject constructor(
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback
             )
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
 
+    suspend fun fetchTopTVShowDetails(pages: Int) : List<TVShowDetails?>? {
+       return try {
+            fetchTVShowDetails(
+                pages = pages,
+                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     fun fetchOnTheAirTVShows(pages: Int, callback: (List<TVShowDetails?>?) -> Unit) {
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback,
             )
         } catch (e: Exception) {
@@ -153,11 +266,23 @@ class TVShowsRepository@Inject constructor(
 
     }
 
+    suspend fun fetchOnTheAirTVShows(pages: Int) : List<TVShowDetails?>? {
+        return try {
+            fetchTVShowDetails(
+                pages = pages,
+                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     fun fetchAiringTodayTVShows(pages: Int, callback: (List<TVShowDetails?>?) -> Unit) {
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback,
             )
         } catch (e : Exception) {
@@ -165,20 +290,43 @@ class TVShowsRepository@Inject constructor(
         }
     }
 
+    suspend fun fetchAiringTodayTVShows(pages: Int) : List<TVShowDetails?>? {
+       return try {
+            fetchTVShowDetails(
+                pages = pages,
+                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e : Exception) {
+            e.printStackTrace()
+           null
+        }
+    }
+
     fun fetchSimilarTVShows(seriesId: Int, pages: Int, callback: (List<TVShowDetails?>?) -> Unit) {
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
+    suspend fun fetchSimilarTVShows(seriesId: Int, pages: Int) : List<TVShowDetails?>?{
+        return try {
+            fetchTVShowDetails(
+                pages = pages,
+                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     fun getTVShowReviews(seriesId: Int, callback: (Response<ReviewsResponse?>) -> Unit) {
             try {
-                tvShowApiService.getTVShowReviews(seriesId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<ReviewsResponse?> {
+                tvShowApiService.getTVShowReviews(seriesId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<ReviewsResponse?> {
                     override fun onResponse(
                         p0: Call<ReviewsResponse?>,
                         p1: Response<ReviewsResponse?>
@@ -205,7 +353,7 @@ class TVShowsRepository@Inject constructor(
                 movieId = movieId,
                 apiKey = API_KEY,
                 imageLanguage = imageLanguage,
-                language = defaultLocale)?.enqueue(object : Callback<MovieImagesResponse?> {
+                language = defaultLocale())?.enqueue(object : Callback<MovieImagesResponse?> {
                 override fun onResponse(
                     p0: Call<MovieImagesResponse?>,
                     p1: Response<MovieImagesResponse?>
@@ -229,7 +377,7 @@ class TVShowsRepository@Inject constructor(
     fun fetchTrailers(seriesId: Int, callback: (Response<TrailersResponse?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                tvShowApiService.getTVShowTrailer(seriesId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object :
+                tvShowApiService.getTVShowTrailer(seriesId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object :
                     Callback<TrailersResponse?> {
                     override fun onResponse(
                         p0: Call<TrailersResponse?>,
@@ -255,7 +403,7 @@ class TVShowsRepository@Inject constructor(
     fun fetchTVShowsDetailsWithCastAndVideos(seriesId: Int, callback: (Response<TVShowDetailsWithCastAndVideos?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                tvShowApiService.getTVShowDetailsWithCastAndVideos(seriesId, apiKey = API_KEY, language = defaultLocale)
+                tvShowApiService.getTVShowDetailsWithCastAndVideos(seriesId, apiKey = API_KEY, language = defaultLocale())
                     ?.enqueue(object : Callback<TVShowDetailsWithCastAndVideos?> {
                         override fun onResponse(
                             p0: Call<TVShowDetailsWithCastAndVideos?>,
@@ -299,7 +447,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale)?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {
@@ -313,7 +461,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale)?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {
@@ -327,7 +475,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale)?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {
@@ -341,7 +489,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale)?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {

@@ -69,6 +69,15 @@ interface MovieApiService {
         @Query ("page") page: Int = 1): Call <MovieResponse?>?
 
     @GET("movie/popular")
+    fun getPopularMovies(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String,
+        @Query ("page") page: Int = 1,
+        @Query("sort_by") sortedBy: String = "popularity.desc",
+        @Query("with_watch_monetization_types") watchMonetizationTypes: String = "flatrate",
+        @Query("watch_region") watchRegion: String = "US"): Call <MovieResponse?>?
+
+    @GET("movie/popular")
     fun getTotalPagesPopular(
         @Query("api_key") apiKey: String,
         @Query("language") language: String): Call <TotalPages?>?

@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import com.drew.themoviedatabase.Network.CombinedCreditsResponse
 import com.drew.themoviedatabase.Network.PersonPhotosResponse
 import com.drew.themoviedatabase.POJO.PersonDetails
-import com.drew.themoviedatabase.data.PersonRepository
+import com.drew.themoviedatabase.repository.PersonRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 

@@ -1,7 +1,8 @@
-package com.drew.themoviedatabase.data
+package com.drew.themoviedatabase.repository.Movies
 
-import android.content.res.Resources
-import androidx.core.os.ConfigurationCompat
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.drew.themoviedatabase.Network.API_KEY
 import com.drew.themoviedatabase.Network.CastResponse
 import com.drew.themoviedatabase.Network.MovieApiService
@@ -15,29 +16,59 @@ import com.drew.themoviedatabase.Network.TrailersResponse
 import com.drew.themoviedatabase.POJO.Movie
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
+import com.drew.themoviedatabase.Utilities.defaultLocale
+import com.drew.themoviedatabase.Utilities.imageLanguage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.Locale
 import javax.inject.Inject
 
 class MovieRepository @Inject constructor(
     private  val movieApiService: MovieApiService,
 ) {
-    private val systemLocale = ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]
-    private val locale = if (systemLocale != null) {
-        Locale(systemLocale.language, systemLocale.country)
-    } else {
-        Locale("en", "US")
+
+    fun getPopularMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { PopularMoviesPagingSource(this) }
+        ).flow
     }
-    private val defaultLocale = locale.toLanguageTag()
-    private val imageLanguage = systemLocale?.language ?: "en"
+
+    fun getTopRatedMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { TopRatedMoviesPagingSource(this) }
+        ).flow
+    }
+
+    fun getUpcomingMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
+        return Pager(
+            config = PagingConfig(pageSize = 40, initialLoadSize = 40),
+            pagingSourceFactory = { UpcomingMoviesPagingSource(this) }
+        ).flow
+    }
+
+    fun getNowPlayingMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { NowPlayingMoviesPagingSource(this) }
+        ).flow
+    }
+
+    fun getTrendingMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { TrendingMoviesPagingSource(this) }
+        ).flow
+    }
 
     private fun fetchMovies(
         pages: Int,
@@ -75,6 +106,35 @@ class MovieRepository @Inject constructor(
         }
     }
 
+    private suspend fun fetchMovies(
+        pages: Int,
+        apiCall: suspend (Int) -> Response<MovieResponse?>?,
+
+    ) : List<Movie?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    try {
+                        val response = apiCall(pages)
+                        if (response?.isSuccessful == true) {
+                            response.body()?.getResults()
+                        } else {
+                            null
+                        }
+                    } catch (e : Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                }
+            }
+
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     private fun fetchMovieDetails(
         pages: Int,
         apiCall: suspend (Int) -> Response<MovieResponse?>?,
@@ -88,7 +148,7 @@ class MovieRepository @Inject constructor(
                         val jobs = movies.map { movie ->
                             async {
                                 try {
-                                    val response = movieApiService.getMovieDetailsWithCertifications(movie.id, apiKey = API_KEY, language = defaultLocale)?.execute()
+                                    val response = movieApiService.getMovieDetailsWithCertifications(movie.id, apiKey = API_KEY, language = defaultLocale())?.execute()
 
                                     if (response?.isSuccessful == true) {
                                          response.body()
@@ -118,11 +178,49 @@ class MovieRepository @Inject constructor(
         }
     }
 
-    fun fetchPopularMovieDetails(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
+    private suspend fun fetchMovieDetails(
+        pages: Int,
+        apiCall: suspend (Int) -> Response<MovieResponse?>?
+    ) : List<MovieDetailsReleaseData?>? {
+        return try {
+            val movies = fetchMovies(pages = pages, apiCall = apiCall)
+            if (movies != null) {
+                coroutineScope {
+                    val detailedMovies = movies.map { movie ->
+                        async(Dispatchers.IO) {
+                            try {
+                                val response = movieApiService.getMovieDetailsWithCertifications(movie?.id, apiKey = API_KEY, language = defaultLocale())?.execute()
+
+                                if (response?.isSuccessful == true) {
+                                    response.body()
+                                } else {
+                                    null
+                                }
+                            } catch (e:Exception) {
+                                e.printStackTrace()
+                                null
+                            }
+                        }
+                    }
+                    detailedMovies.awaitAll()
+                }
+            } else {
+                null
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
+
+    fun fetchPopularMovieDetails1(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
        try {
            fetchMovieDetails(
                pages = pages,
-               apiCall = { page -> movieApiService.getPopularMovies(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+               apiCall = { page -> movieApiService.getPopularMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                callback = callback,
            )
        } catch (e: Exception) {
@@ -130,11 +228,23 @@ class MovieRepository @Inject constructor(
        }
     }
 
-    fun fetchTopRatedMovieDetails(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
+    suspend fun fetchPopularMovieDetails(pages: Int) : List<MovieDetailsReleaseData?>? {
+       return try {
+            fetchMovieDetails(
+                pages = pages,
+                apiCall = { page -> movieApiService.getPopularMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+           null
+        }
+    }
+
+    fun fetchTopRatedMovieDetails1(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
         try {
             fetchMovieDetails(
                 pages = pages,
-                apiCall = { page -> movieApiService.getTopRatedMovies(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> movieApiService.getTopRatedMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback
             )
         } catch (e: Exception) {
@@ -143,15 +253,39 @@ class MovieRepository @Inject constructor(
 
     }
 
+    suspend fun fetchTopRatedMovieDetails(pages: Int) : List<MovieDetailsReleaseData?>? {
+        return try {
+            fetchMovieDetails(
+                pages = pages,
+                apiCall = { page -> movieApiService.getTopRatedMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     fun fetchNowPlayingMovieDetails(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
         try {
             fetchMovieDetails(
                 pages = pages,
-                apiCall = { page -> movieApiService.getNowPlayingMovies(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> movieApiService.getNowPlayingMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback,
             )
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    suspend fun fetchNowPlayingMovieDetails(pages: Int): List<MovieDetailsReleaseData?>? {
+        return try {
+            fetchMovieDetails(
+                pages = pages,
+                apiCall = { page -> movieApiService.getNowPlayingMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 
@@ -159,7 +293,7 @@ class MovieRepository @Inject constructor(
         try {
             fetchMovieDetails(
                 pages = pages,
-                apiCall = { page -> movieApiService.getSimilarMovies(movieId = movieId, apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> movieApiService.getSimilarMovies(movieId = movieId, apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback,
             )
         } catch (e: Exception) {
@@ -167,11 +301,23 @@ class MovieRepository @Inject constructor(
         }
     }
 
+    suspend fun fetchSimilarMovieDetails(movieId: Int, pages: Int) : List<MovieDetailsReleaseData?>? {
+        return try {
+            fetchMovieDetails(
+                pages = pages,
+                apiCall = { page -> movieApiService.getSimilarMovies(movieId = movieId, apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     fun fetchUpcomingMovieDetails(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
         try {
             fetchMovieDetails(
                 pages = pages,
-                apiCall = { page -> movieApiService.getUpcomingMovies(apiKey = API_KEY, language = defaultLocale, page =  page)?.execute() },
+                apiCall = { page -> movieApiService.getUpcomingMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback,
             )
         } catch (e : Exception) {
@@ -179,11 +325,23 @@ class MovieRepository @Inject constructor(
         }
     }
 
+    suspend fun fetchUpcomingMovieDetails(pages: Int): List<MovieDetailsReleaseData?>? {
+      return try {
+            fetchMovieDetails(
+                pages = pages,
+                apiCall = { page -> movieApiService.getUpcomingMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+            )
+        } catch (e : Exception) {
+            e.printStackTrace()
+          null
+        }
+    }
+
     fun fetchTrendingMovieDetails(pages: Int, callback: (List<MovieDetailsReleaseData?>?) -> Unit) {
         try {
             fetchMovieDetails(
                 pages = pages,
-                apiCall = { page -> movieApiService.getTrendingMovies(apiKey = API_KEY, language = defaultLocale)?.execute() },
+                apiCall = { page -> movieApiService.getTrendingMovies(apiKey = API_KEY, language = defaultLocale())?.execute() },
                 callback = callback
             )
         } catch (e : Exception) {
@@ -191,10 +349,22 @@ class MovieRepository @Inject constructor(
         }
     }
 
+    suspend fun fetchTrendingMovieDetails(pages: Int) :List<MovieDetailsReleaseData?>? {
+       return try {
+            fetchMovieDetails(
+                pages = pages,
+                apiCall = { page -> movieApiService.getTrendingMovies(apiKey = API_KEY, language = defaultLocale())?.execute() }
+            )
+        } catch (e : Exception) {
+            e.printStackTrace()
+           null
+        }
+    }
+
     fun fetchTrailers(movieId: Int, callback: (Response<TrailersResponse?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                movieApiService.getTrailer(movieId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<TrailersResponse?> {
+                movieApiService.getTrailer(movieId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<TrailersResponse?> {
                     override fun onResponse(
                         p0: Call<TrailersResponse?>,
                         p1: Response<TrailersResponse?>
@@ -218,7 +388,7 @@ class MovieRepository @Inject constructor(
     fun fetchReleaseDates(movieId: Int, callback: (Response<MovieReleaseData?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                movieApiService.getReleaseDateAndCertification(movieId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<MovieReleaseData?> {
+                movieApiService.getReleaseDateAndCertification(movieId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<MovieReleaseData?> {
                     override fun onResponse(
                         p0: Call<MovieReleaseData?>,
                         p1: Response<MovieReleaseData?>
@@ -239,7 +409,7 @@ class MovieRepository @Inject constructor(
     fun fetchMovieDetails(movieId: Int, callback: (Response<MovieDetails?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    movieApiService.getMovieDetails(movieId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<MovieDetails?> {
+                    movieApiService.getMovieDetails(movieId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<MovieDetails?> {
                         override fun onResponse(
                             p0: Call<MovieDetails?>,
                             p1: Response<MovieDetails?>
@@ -261,7 +431,7 @@ class MovieRepository @Inject constructor(
    fun fetchCast(movieId: Int, callback: (Response<CastResponse?>) -> Unit) {
        CoroutineScope(Dispatchers.IO).launch {
            try {
-               movieApiService.getCast(movieId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<CastResponse?> {
+               movieApiService.getCast(movieId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<CastResponse?> {
                    override fun onResponse(p0: Call<CastResponse?>, p1: Response<CastResponse?>) {
                        if (p1.isSuccessful) {
                            callback(p1)
@@ -283,7 +453,7 @@ class MovieRepository @Inject constructor(
     fun fetchMovieDetailsWithCastAndVideos(movieId: Int, callback: (Response<MovieDetailsResponse?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                movieApiService.getMovieDetailsWithCastAndVideos(movieId, apiKey = API_KEY, language = defaultLocale).enqueue(object : Callback<MovieDetailsResponse?> {
+                movieApiService.getMovieDetailsWithCastAndVideos(movieId, apiKey = API_KEY, language = defaultLocale()).enqueue(object : Callback<MovieDetailsResponse?> {
                     override fun onResponse(p0: Call<MovieDetailsResponse?>, p1: Response<MovieDetailsResponse?>) {
                         if (p1.isSuccessful) {
                             callback(p1)
@@ -305,7 +475,7 @@ class MovieRepository @Inject constructor(
     fun getMovieReviews(movieId: Int, callback: (Response<ReviewsResponse?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                movieApiService.getReviews(movieId, apiKey = API_KEY, language = defaultLocale)?.enqueue(object : Callback<ReviewsResponse?> {
+                movieApiService.getReviews(movieId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<ReviewsResponse?> {
                     override fun onResponse(
                         p0: Call<ReviewsResponse?>,
                         p1: Response<ReviewsResponse?>
@@ -333,7 +503,7 @@ class MovieRepository @Inject constructor(
                     movieId = movieId,
                     apiKey = API_KEY,
                     imageLanguage = imageLanguage,
-                    language = defaultLocale
+                    language = defaultLocale()
                 )?.enqueue(object : Callback<MovieImagesResponse?> {
                     override fun onResponse(
                         p0: Call<MovieImagesResponse?>,
@@ -376,7 +546,7 @@ class MovieRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                val pages = getTotalPages {
-                    movieApiService.getTotalPagesUpcoming(apiKey = API_KEY, language = defaultLocale)?.execute()
+                    movieApiService.getTotalPagesUpcoming(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {
@@ -392,7 +562,7 @@ class MovieRepository @Inject constructor(
                 val pages = getTotalPages {
                     movieApiService.getTotalPagesTopRated(
                         apiKey = API_KEY,
-                        language = defaultLocale
+                        language = defaultLocale()
                     )?.execute()
                 }
                 pages
@@ -409,7 +579,7 @@ class MovieRepository @Inject constructor(
                 val pages = getTotalPages {
                     movieApiService.getTotalPagesNowPlaying(
                         apiKey = API_KEY,
-                        language = defaultLocale
+                        language = defaultLocale()
                     )?.execute()
                 }
                 pages
@@ -426,7 +596,7 @@ class MovieRepository @Inject constructor(
                 val pages = getTotalPages {
                     movieApiService.getTotalPagesPopular(
                         apiKey = API_KEY,
-                        language = defaultLocale
+                        language = defaultLocale()
                     )?.execute()
                     }
                 pages

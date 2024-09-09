@@ -48,7 +48,7 @@ interface TVShowApiService {
 
     @GET("tv/{series_id}")
     fun getTVShowDetailsWithContentRatings(
-        @Path("series_id") tvShowId: Int,
+        @Path("series_id") tvShowId: Int?,
         @Query("language") language: String,
         @Query("api_key") apiKey: String?,
         @Query("append_to_response") appendToResponse: String = "content_ratings,watch/providers"): Call<TVShowDetails?>?

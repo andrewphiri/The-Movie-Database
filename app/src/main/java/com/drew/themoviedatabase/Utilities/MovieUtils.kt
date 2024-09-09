@@ -30,3 +30,15 @@ fun getWatchRegion(): String {
     }
     return locale.country
 }
+
+fun defaultLocale(): String {
+    val systemLocale = ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]
+    val locale = if (systemLocale != null) {
+        Locale(systemLocale.language, systemLocale.country)
+    } else {
+        Locale("en", "US")
+    }
+    return locale.toLanguageTag()
+}
+
+val imageLanguage = ConfigurationCompat.getLocales(Resources.getSystem().configuration)[0]?.language ?: "en"

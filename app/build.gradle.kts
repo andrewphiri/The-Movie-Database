@@ -106,6 +106,11 @@ dependencies {
 
     //
     implementation (libs.androidx.webkit)
+
+    //Pagination
+    implementation(libs.androidx.paging.runtime)
+    // optional - Jetpack Compose integration
+    implementation(libs.androidx.paging.compose)
 }
 
 

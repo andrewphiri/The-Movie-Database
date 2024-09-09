@@ -3,6 +3,8 @@ package com.drew.themoviedatabase.screens.Home
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.POJO.CastMembers
@@ -10,7 +12,7 @@ import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
-import com.drew.themoviedatabase.data.MovieRepository
+import com.drew.themoviedatabase.repository.Movies.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,8 +22,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MoviesViewModel @Inject constructor(
-    private val repository: MovieRepository
-) : ViewModel() {
+    private val repository: MovieRepository,
+
+    ) : ViewModel() {
+
+    val moviesPopular = repository.getPopularMovies().cachedIn(viewModelScope)
+    val moviesTopRated = repository.getTopRatedMovies().cachedIn(viewModelScope)
+    val moviesUpcoming = repository.getUpcomingMovies().cachedIn(viewModelScope)
+    val moviesNowPlaying = repository.getNowPlayingMovies().cachedIn(viewModelScope)
+    val moviesTrending = repository.getTrendingMovies().cachedIn(viewModelScope)
 
     private val _upcomingMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
     val upcomingMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _upcomingMovies
@@ -72,42 +81,42 @@ class MoviesViewModel @Inject constructor(
     val movieImages: LiveData<MovieImagesResponse?> get() = _movieImages
 
 
-    init {
-        try {
-            CoroutineScope(Dispatchers.IO).launch {
-                _isLoading.postValue(true)
-                async { fetchPopularMovies(3) }.await()
-                async { fetchTopRatedMovies(3) }.await()
-                async { fetchNowPlayingMovies(3) }.await()
-                async {
-                    fetchUpcomingMovies()
-                }.await()
-                async { fetchTrendingMovies() }.await()
-            }
-        } catch (e : Exception) {
-            e.printStackTrace()
-        }
-    }
+//    init {
+//        try {
+//            CoroutineScope(Dispatchers.IO).launch {
+//                _isLoading.postValue(true)
+//                async { fetchPopularMovies(3) }.await()
+//                async { fetchTopRatedMovies(3) }.await()
+//                async { fetchNowPlayingMovies(3) }.await()
+//                async {
+//                    fetchUpcomingMovies()
+//                }.await()
+//                async { fetchTrendingMovies() }.await()
+//            }
+//        } catch (e : Exception) {
+//            e.printStackTrace()
+//        }
+//    }
 
     fun setRefreshing(isRefreshing: Boolean) {
         _isRefreshing.value = isRefreshing
     }
 
-    fun fetchPopularMovies(pages: Int) {
-        repository.fetchPopularMovieDetails(pages) { fetchedMovies ->
-            if (fetchedMovies != null) {
-                _popularMovies.value = fetchedMovies
-            }
-        }
-    }
-
-    fun fetchTopRatedMovies(pages: Int) {
-        repository.fetchTopRatedMovieDetails(pages) { fetchedMovies ->
-            if (fetchedMovies != null) {
-                _topRatedMovies.value = fetchedMovies
-            }
-        }
-    }
+//    suspend fun fetchPopularMovies(pages: Int) {
+//        repository.fetchPopularMovieDetails(pages) { fetchedMovies ->
+//            if (fetchedMovies != null) {
+//                _popularMovies.value = fetchedMovies
+//            }
+//        }
+//    }
+//
+//    suspend fun fetchTopRatedMovies(pages: Int) {
+//        repository.fetchTopRatedMovieDetails(pages) { fetchedMovies ->
+//            if (fetchedMovies != null) {
+//                _topRatedMovies.value = fetchedMovies
+//            }
+//        }
+//    }
 
     fun fetchNowPlayingMovies(pages: Int) {
 //        val pageToFetch = getTotalPagesNowPlaying()

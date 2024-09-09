@@ -1,6 +1,5 @@
 package com.drew.themoviedatabase.composeUI
 
-import android.content.res.Resources
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.animation.animateContentSize
@@ -39,7 +38,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -60,7 +58,7 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.core.os.ConfigurationCompat
+import androidx.paging.compose.LazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.CastMembers
@@ -76,7 +74,6 @@ import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.formatDuration
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import java.math.RoundingMode
-import java.util.Locale
 
 @Composable
 fun ExpandableText(
@@ -301,6 +298,60 @@ fun MovieList(
                 }
             }
         }
+    }
+
+}
+
+@Composable
+fun MovieList(
+    modifier: Modifier = Modifier,
+    movies: LazyPagingItems<MovieDetailsReleaseData>,
+    categoryTitle: String = "",
+    color: Color,
+    onItemClick: (Int) -> Unit
+) {
+
+    val watchRegion = getWatchRegion()
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VerticalDivider(
+                modifier = Modifier
+                    .width(6.dp),
+                color = color
+            )
+            Text(
+                text = categoryTitle,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+
+                items(movies.itemCount) { index ->
+                    movies[index]?.let {
+                        MovieItem(
+                            modifier = modifier,
+                            movie = it,
+                            onItemClick = onItemClick,
+                            watchRegion = watchRegion
+                        )
+                    }
+                }
+
+
+        }
+
     }
 
 }
@@ -769,6 +820,57 @@ fun CastList(
 @Composable
 fun TVShowList(
     modifier: Modifier = Modifier,
+    tvShows: LazyPagingItems<TVShowDetails>,
+    onItemClick: (Int) -> Unit,
+    categoryTitle: String = "",
+    color: Color,
+) {
+
+    val watchRegion = getWatchRegion()
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VerticalDivider(
+                modifier = Modifier
+                    .width(6.dp),
+                color = color
+            )
+            Text(
+                text = categoryTitle,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+
+                items(tvShows.itemCount) { index ->
+                    tvShows[index]?.let {
+                        TVShowItem(
+                            modifier = modifier,
+                            tvShow = it,
+                            onItemClick = onItemClick,
+                            watchRegion = watchRegion
+                        )
+                    }
+                }
+        }
+    }
+}
+
+@Composable
+fun TVShowList(
+    modifier: Modifier = Modifier,
     tvShows: List<TVShowDetails?>?,
     onItemClick: (Int) -> Unit,
     categoryTitle: String = "",
@@ -802,8 +904,9 @@ fun TVShowList(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            tvShows?.size?.let {
-                items(it) { index ->
+
+            if (tvShows != null) {
+                items(tvShows.size) { index ->
                     tvShows[index]?.let {
                         TVShowItem(
                             modifier = modifier,
