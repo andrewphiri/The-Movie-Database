@@ -1,13 +1,13 @@
 package com.drew.themoviedatabase.screens.Details
 
-import android.util.Log
-import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -37,22 +35,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
-import com.drew.themoviedatabase.Navigation.MovieTopAppBar
+import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
@@ -60,12 +54,10 @@ import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Provider
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
-import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.Utilities.currencyFormatter
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.composeUI.CastList
-import com.drew.themoviedatabase.composeUI.ExpandableText
 import com.drew.themoviedatabase.composeUI.MovieList
 import com.drew.themoviedatabase.composeUI.OverviewText
 import com.drew.themoviedatabase.composeUI.PhotosList
@@ -79,7 +71,6 @@ import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import java.math.RoundingMode
 
 @Serializable
 data class DetailsMovieScreen(
@@ -97,10 +88,9 @@ fun MovieDetailsScreen(
     navigateToCastDetails: (Int) -> Unit,
     navigateToReviews: (Int) -> Unit
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
-    var trailers by remember {
+    val trailers by remember {
         mutableStateOf(listOf<Trailers?>())
     }
     var isLoading by remember { mutableStateOf(true) }
@@ -151,6 +141,7 @@ fun MovieDetailsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             MovieTopAppBar(
                 canNavigateBack = canNavigateBack,
@@ -241,7 +232,6 @@ fun MovieDetailsScreen(
                         }
                     }
             }
-
         }
     }
 }
@@ -253,15 +243,9 @@ fun MovieDetailsCard(
     trailers: List<Trailers?>?,
     isTrailersEmpty: Boolean = false
 ) {
-
     val ageRate = movieDetails?.certifications?.results
         ?.find { it.iso31661 == "US" }?.releaseDates?.
         find { it.certification != "" }?.certification ?: ""
-
-    var isExpanded by remember { mutableStateOf(false) }
-    //val textLayoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
-    var isClickable by remember { mutableStateOf(false) }
-    val finalText by remember { mutableStateOf(buildAnnotatedString { append(movieDetails?.overview ?: "") }) }
 
     Column(
         modifier = modifier,
@@ -338,14 +322,7 @@ fun MovieDetailsCard(
                 contentDescription = "${movieDetails?.title} poster",
                 placeholder = null
             )
-//            Text(
-//                modifier = Modifier
-//                    .fillMaxHeight()
-//                    .fillMaxWidth()
-//                    .padding(8.dp),
-//                text = movieDetails?.overview ?: "",
-//                style = MaterialTheme.typography.bodySmall
-//            )
+
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -355,13 +332,11 @@ fun MovieDetailsCard(
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
-
                 OverviewText(
                     overview = movieDetails?.overview ?: "",
                 )
             }
         }
-
 
     }
 }
@@ -432,9 +407,7 @@ fun OtherMovieDetailsCard(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-
         }
-
     }
 }
 
@@ -450,15 +423,19 @@ fun MovieWatchProviderList(
     val watchProvidersFlatRate = movie?.watchProviders?.results?.get(watchRegion)?.flatrate?.toList()
 
     val allProviders: SnapshotStateList<Provider>? = remember { mutableStateListOf() }
+
     if (watchProvidersRent != null) {
         allProviders?.addAll(watchProvidersRent)
     }
+
     if (watchProvidersBuy != null) {
         allProviders?.addAll(watchProvidersBuy)
     }
+
     if (watchProvidersFlatRate != null) {
         allProviders?.addAll(watchProvidersFlatRate)
     }
+
     if (allProviders != null) {
         val link = movie?.watchProviders?.results?.get(watchRegion)?.link ?: ""
         val attribution = buildAnnotatedString {

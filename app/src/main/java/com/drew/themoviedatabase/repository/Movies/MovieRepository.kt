@@ -10,6 +10,7 @@ import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.MovieReleaseData
 import com.drew.themoviedatabase.Network.MovieResponse
+import com.drew.themoviedatabase.Network.MultiSearchResult
 import com.drew.themoviedatabase.Network.ReviewsResponse
 import com.drew.themoviedatabase.Network.TotalPages
 import com.drew.themoviedatabase.Network.TrailersResponse
@@ -18,6 +19,7 @@ import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
+import com.drew.themoviedatabase.repository.MultiSearchPagingSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -69,6 +71,8 @@ class MovieRepository @Inject constructor(
             pagingSourceFactory = { TrendingMoviesPagingSource(this) }
         ).flow
     }
+
+
 
     private fun fetchMovies(
         pages: Int,
@@ -604,6 +608,21 @@ class MovieRepository @Inject constructor(
                 e.printStackTrace()
                 1
             }
+        }
+    }
+
+    suspend fun multiSearch(searchQuery: String, page: Int) :  List<MultiSearchResult?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    val response = movieApiService.getMultiSearch(apiKey = API_KEY, language = defaultLocale(), query = searchQuery, page = page)?.execute()
+                    response?.body()?.results ?: emptyList()
+                }
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
         }
     }
 }

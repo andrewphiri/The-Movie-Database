@@ -4,19 +4,25 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.MovieImagesResponse
+import com.drew.themoviedatabase.Network.MultiSearchResult
 import com.drew.themoviedatabase.POJO.CastMembers
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.repository.Movies.MovieRepository
+import com.drew.themoviedatabase.repository.MultiSearchPagingSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -97,6 +103,13 @@ class MoviesViewModel @Inject constructor(
 //            e.printStackTrace()
 //        }
 //    }
+
+    fun getMultiSearch(query: String) : Flow<PagingData<MultiSearchResult>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { MultiSearchPagingSource(repository, query) }
+        ).flow
+    }
 
     fun setRefreshing(isRefreshing: Boolean) {
         _isRefreshing.value = isRefreshing

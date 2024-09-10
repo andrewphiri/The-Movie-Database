@@ -2,6 +2,7 @@ package com.drew.themoviedatabase.screens.Reviews
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.drew.themoviedatabase.Navigation.MovieTopAppBar
+import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.composeUI.UserReviewList
 import com.drew.themoviedatabase.screens.Home.TVShowsViewModel
@@ -56,6 +57,7 @@ fun TVUserReviewsScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             MovieTopAppBar(
                 title = "Reviews",

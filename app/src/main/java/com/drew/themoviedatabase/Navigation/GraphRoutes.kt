@@ -11,6 +11,9 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable object DetailsGraph
-@Serializable object HomeGraph
+@Serializable object HomeNavGraph
 @Serializable object AuthGraph
-@Serializable object RootGraph
+@Serializable object RootNavGraph
+@Serializable object VideosNavGraph
+@Serializable object ProfileNavGraph
+@Serializable object SearchNavGraph

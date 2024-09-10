@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,7 +34,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
-import com.drew.themoviedatabase.Navigation.MovieTopAppBar
+import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.PersonDetails
 import com.drew.themoviedatabase.R
@@ -77,6 +78,7 @@ fun CastDetailsScreen(
 
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             MovieTopAppBar(
                 title = personDetails?.name ?: "",

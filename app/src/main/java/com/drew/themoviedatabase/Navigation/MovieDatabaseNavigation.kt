@@ -1,18 +1,7 @@
 package com.drew.themoviedatabase.Navigation
 
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -26,32 +15,38 @@ import com.drew.themoviedatabase.screens.Details.DetailsTVScreen
 import com.drew.themoviedatabase.screens.Details.MovieDetailsScreen
 import com.drew.themoviedatabase.screens.Details.TVDetailsScreen
 import com.drew.themoviedatabase.screens.Home.HomeScreen
+import com.drew.themoviedatabase.screens.Profile.ProfileScreen
 import com.drew.themoviedatabase.screens.Reviews.MoviesReviewsScreen
 import com.drew.themoviedatabase.screens.Reviews.MovieUserReviewsScreen
 import com.drew.themoviedatabase.screens.Reviews.TVReviewsScreen
 import com.drew.themoviedatabase.screens.Reviews.TVUserReviewsScreen
+import com.drew.themoviedatabase.screens.Search.SearchScreen
+import com.drew.themoviedatabase.screens.Videos.VideosScreen
 
 @Composable
 fun MovieNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController,
 ) {
+
     NavHost(
         modifier = modifier,
         navController = navController,
-        startDestination = HomeGraph,
-        route = RootGraph::class
+        startDestination = HomeNavGraph,
+        route = RootNavGraph::class
         ) {
         homeNavGraph(navController)
         detailsNavGraph(navController)
-
+        searchNavGraph(navController)
+        profileNavGraph(navController)
+        videoNavGraph(navController)
     }
 }
 
 fun NavGraphBuilder.homeNavGraph(
     navController: NavHostController
 ) {
-    navigation<HomeGraph>(
+    navigation<HomeNavGraph>(
         startDestination = HomeScreen,
     ) {
         composable<HomeScreen> {
@@ -178,37 +173,63 @@ fun NavGraphBuilder.detailsNavGraph(
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MovieTopAppBar(
-    modifier: Modifier = Modifier,
-    navigateUp: () -> Unit = {},
-    title: String,
-    canNavigateBack: Boolean = false
+fun NavGraphBuilder.searchNavGraph(
+    navController: NavHostController
 ) {
-    if (canNavigateBack) {
-        TopAppBar(
-            modifier =
-            modifier.height(56.dp),
-            title = {
-                Text(
-                    text = title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            colors = TopAppBarDefaults.topAppBarColors(),
-            navigationIcon = {
-                IconButton(onClick = navigateUp) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Navigate Back"
+    navigation<SearchNavGraph>(
+        startDestination = SearchScreen,
+    ) {
+        composable<SearchScreen> {
+            SearchScreen(
+                navigateToMovieDetailsScreen = { movieId ->
+                    navController.navigate(
+                        DetailsMovieScreen(
+                            movieId = movieId,
+                        )
+                    )
+                },
+                navigateToCastDetailsScreen = { personId ->
+                    navController.navigate(
+                        PersonDetailsScreen(
+                            personId = personId
+                        )
+                    )
+                },
+                navigateToTVShowDetailsScreen = { seriesId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = seriesId,
+                        )
                     )
                 }
-            }
-        )
-    } else {
-        TopAppBar(title = { Text(title) }, modifier = modifier,)
-    }
+            )
 
+        }
+    }
 }
+
+fun  NavGraphBuilder.profileNavGraph(
+    navController: NavHostController
+) {
+    navigation<ProfileNavGraph>(
+        startDestination = ProfileScreen,
+    ) {
+        composable<ProfileScreen> {
+            ProfileScreen()
+        }
+    }
+}
+
+fun NavGraphBuilder.videoNavGraph(
+    navController: NavHostController
+) {
+    navigation<VideosNavGraph>(
+        startDestination = VideosScreen,
+    ) {
+        composable<VideosScreen> {
+            VideosScreen()
+        }
+    }
+}
+
+

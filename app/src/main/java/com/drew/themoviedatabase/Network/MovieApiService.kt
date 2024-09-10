@@ -68,6 +68,13 @@ interface MovieApiService {
         @Query("language") language: String,
         @Query ("page") page: Int = 1): Call <MovieResponse?>?
 
+    @GET("search/multi")
+    fun getMultiSearch(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String,
+        @Query ("page") page: Int = 1,
+        @Query("query") query: String) : Call <MultiSearchResponse?>?
+
     @GET("movie/popular")
     fun getPopularMovies(
         @Query("api_key") apiKey: String,

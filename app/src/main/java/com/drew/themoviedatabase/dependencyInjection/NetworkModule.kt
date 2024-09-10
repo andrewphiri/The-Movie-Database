@@ -3,7 +3,11 @@ package com.drew.themoviedatabase.dependencyInjection
 import com.drew.themoviedatabase.Network.BASE_URL
 import com.drew.themoviedatabase.Network.CastApiService
 import com.drew.themoviedatabase.Network.MovieApiService
+import com.drew.themoviedatabase.Network.MultiSearchResult
 import com.drew.themoviedatabase.Network.TVShowApiService
+import com.drew.themoviedatabase.Utilities.MultiSearchResultAdapter
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,12 +18,18 @@ import retrofit2.converter.gson.GsonConverterFactory
 @InstallIn(SingletonComponent::class)
 @Module
 object NetworkModule {
+    @Provides
+    fun provideGson() : Gson {
+        return GsonBuilder()
+            .registerTypeAdapter(MultiSearchResult::class.java, MultiSearchResultAdapter())
+            .create()
+    }
 
     @Provides
-    fun provideRetrofit(): Retrofit {
+    fun provideRetrofit(gson: Gson): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 

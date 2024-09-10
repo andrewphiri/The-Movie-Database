@@ -45,7 +45,7 @@ import androidx.core.os.ConfigurationCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
-import com.drew.themoviedatabase.Navigation.MovieTopAppBar
+import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
 import com.drew.themoviedatabase.POJO.Photos

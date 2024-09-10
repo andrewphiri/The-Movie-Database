@@ -23,23 +23,18 @@ import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val viewModel: MoviesViewModel by lazy {
-        ViewModelProvider(this).get(MoviesViewModel::class.java)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
         setContent {
             TheMovieDatabaseTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MovieDatabaseApp(
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                    MovieDatabaseApp()
+
             }
         }
     }
+
 }
 
 @Composable
