@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.Network
 
+import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.MovieProviders
@@ -127,7 +128,8 @@ interface MovieApiService {
     fun getReviews(
         @Path("id") movieId: Int,
         @Query("language") language: String,
-        @Query("api_key") apiKey: String?) : Call <ReviewsResponse?>?
+        @Query("api_key") apiKey: String?,
+        @Query ("page") page: Int = 1) : Call <ReviewsResponse?>?
 
 
     @GET("movie/{movie_id}/release_dates")
@@ -169,7 +171,8 @@ interface MovieApiService {
         @Query("api_key") apiKey: String
     ): Call<MovieImagesResponse?>?
 
-
+    @GET("certification/movie/list")
+    fun getCertifications(@Query("api_key") apiKey: String): Call <Certifications?>?
 
     //V4 endpoints
 

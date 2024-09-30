@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.Network
 
+import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.SeasonResponse
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import retrofit2.Call
@@ -58,7 +59,7 @@ interface TVShowApiService {
         @Path("series_id") tvShowId: Int,
         @Query("language") language: String,
         @Query("api_key") apiKey: String?,
-        @Query("append_to_response") appendToResponse: String = "credits,videos"): Call<TVShowDetailsWithCastAndVideos?>?
+        @Query("append_to_response") appendToResponse: String = "credits,videos,content_ratings,watch/providers"): Call<TVShowDetailsWithCastAndVideos?>?
 
     @GET("tv/{series_id}/videos")
     fun getTVShowTrailer(
@@ -70,7 +71,8 @@ interface TVShowApiService {
     fun getTVShowReviews(
         @Path("series_id") tvShowId: Int,
         @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call<ReviewsResponse?>?
+        @Query("api_key") apiKey: String?,
+        @Query ("page") page: Int): Call<ReviewsResponse?>?
 
     @GET("tv/{series_id}/similar")
     fun getSimilarTVShows(
@@ -78,6 +80,9 @@ interface TVShowApiService {
         @Query("language") language: String,
         @Query("api_key") apiKey: String?,
         @Query ("page") page: Int = 1): Call<TVShowsResponse?>?
+
+    @GET("certification/tv/list")
+    fun getCertifications(@Query("api_key") apiKey: String): Call <Certifications?>?
 
     @GET("tv/{series_id}/recommendations")
     fun getRecommendedTVShows(

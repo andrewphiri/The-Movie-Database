@@ -61,7 +61,3 @@ data class SpokenLanguage(
     val name: String
 )
 
-
-
-// Getters and setters
-// Inner classes for Genre, ProductionCompany, ProductionCountry, SpokenLanguage

@@ -2,9 +2,9 @@ package com.drew.themoviedatabase.Network
 
 import com.drew.themoviedatabase.POJO.ContentRating
 import com.drew.themoviedatabase.POJO.Creator
+import com.drew.themoviedatabase.POJO.Genre
 import com.drew.themoviedatabase.POJO.Network
 import com.drew.themoviedatabase.POJO.Season
-import com.drew.themoviedatabase.POJO.TVGenre
 import com.drew.themoviedatabase.POJO.TVProductionCompany
 import com.google.gson.annotations.SerializedName
 
@@ -36,7 +36,7 @@ data class TVShowDetailsWithCastAndVideos(
     @SerializedName("origin_country")
     val originCountry: List<String>,
     @SerializedName("genres")
-    val genres: List<TVGenre>,
+    val genres: List<Genre>,
     @SerializedName("created_by")
     val createdBy: List<Creator>,
     @SerializedName("networks")

@@ -2,32 +2,29 @@ package com.drew.themoviedatabase.repository
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-
-import com.drew.themoviedatabase.Network.MultiSearchResult
-import com.drew.themoviedatabase.repository.Movies.MovieRepository
-
+import com.drew.themoviedatabase.POJO.Photos
 import java.io.IOException
 import javax.inject.Inject
 
-data class MultiSearchPagingSource @Inject constructor(
-    private val movieRepository: MovieRepository,
-    private val query: String
-) : PagingSource<Int, MultiSearchResult>() {
-    override fun getRefreshKey(state: PagingState<Int, MultiSearchResult>): Int? {
+class CastPhotosPagingSource @Inject constructor(
+    private val personRepository: PersonRepository,
+    private val personId: Int
+) : PagingSource<Int, Photos>(){
+    override fun getRefreshKey(state: PagingState<Int, Photos>): Int? {
         return state.anchorPosition?.let {
             state.closestPageToPosition(it)?.prevKey?.plus(1)
                 ?: state.closestPageToPosition(it)?.nextKey?.minus(1)
         }
     }
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MultiSearchResult> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Photos> {
         return try {
             // Key may be null during a refresh, if no explicit key is passed into Pager
             // construction. Use 1 as default, because our API is indexed started at index 1
             val pageNumber = params.key ?: 1
 
-            val searchResult = movieRepository.multiSearch(searchQuery = query, pageNumber)
-            val data = searchResult?.filterNotNull() ?: emptyList()
+            val photos = personRepository.getCastPhotos(personId = personId)
+            val data = photos?.filterNotNull() ?: emptyList()
 
             // Since 1 is the lowest page number, return null to signify no more pages should
             // be loaded before it.
@@ -36,8 +33,8 @@ data class MultiSearchPagingSource @Inject constructor(
 
             LoadResult.Page(
                 data = data,
-                prevKey = prevKey,
-                nextKey = nextKey
+                prevKey = null,
+                nextKey = null
             )
         } catch (e: IOException) {
             LoadResult.Error(e)
@@ -47,4 +44,3 @@ data class MultiSearchPagingSource @Inject constructor(
     }
 
 }
-

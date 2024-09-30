@@ -4,18 +4,18 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
+import com.drew.themoviedatabase.POJO.Certifications
+import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.repository.TVShows.TVShowsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,13 +23,10 @@ class TVShowsViewModel @Inject constructor(
     private val repository: TVShowsRepository,
 ) : ViewModel() {
 
-
-
     val tvShowsPopular = repository.getPopularTVShows().cachedIn(viewModelScope)
     val tvShowsTopRated = repository.getTopRatedTVShows().cachedIn(viewModelScope)
     val tvShowsOnTheAir = repository.getOnTheAirTVShows().cachedIn(viewModelScope)
     val tvShowsAiringToday = repository.getAiringTodayTVShows().cachedIn(viewModelScope)
-
 
     private val _onTheAirTVShows = MutableLiveData<List<TVShowDetails?>?>()
     val onTheAirTVShows: LiveData<List<TVShowDetails?>?> get()  = _onTheAirTVShows
@@ -49,11 +46,21 @@ class TVShowsViewModel @Inject constructor(
     private val _reviews = MutableLiveData<List<Reviews?>?>()
     val reviews: LiveData<List<Reviews?>?> get()  = _reviews
 
+    private val _trailers = MutableLiveData<List<Trailers?>>()
+    val trailers: LiveData<List<Trailers?>> get() = _trailers
+
     private val _tvShowsWithCastAndVideos = MutableLiveData<TVShowDetailsWithCastAndVideos?>()
     val tvShowsWithCastAndVideos: LiveData<TVShowDetailsWithCastAndVideos?> get()  = _tvShowsWithCastAndVideos
 
     private val _tvShowImages = MutableLiveData<MovieImagesResponse?>()
     val tvShowImages: LiveData<MovieImagesResponse?> get() = _tvShowImages
+
+    private val _certifications = MutableLiveData<Certifications?>()
+    val certifications: LiveData<Certifications?> get()  = _certifications
+
+    fun getSimilarTVShows(seriesId: Int) : Flow<PagingData<TVShowDetails>> {
+        return repository.getSimilarTVShows(seriesId).cachedIn(viewModelScope)
+    }
 
     fun fetchPopularTVShows(pages: Int) {
         repository.fetchPopularTVShowsDetails(pages) { fetchedMovies ->
@@ -88,18 +95,20 @@ class TVShowsViewModel @Inject constructor(
         }
     }
 
-
-    fun fetchTrailer(movieId: Int, callback: (List<Trailers>) -> Unit) {
-        repository.fetchTrailers(movieId) {
-            callback(it.body()?.getResults()?.map {
-                Trailers(
-                    name = it.name,
-                    type = it.type,
-                    site = it.site,
-                    key = it.key
-                )
+    fun fetchCertifications() {
+        repository.fetchCertifications { certificationResponse ->
+            if (certificationResponse.isSuccessful) {
+                _certifications.value = certificationResponse.body()
             }
-                ?: emptyList())
+        }
+    }
+
+
+    fun fetchTrailer(seriesId: Int) {
+        repository.fetchTrailers(seriesId) { trailersResponse ->
+            if (trailersResponse.isSuccessful) {
+                _trailers.value = trailersResponse.body()?.getResults()
+            }
         }
     }
 
@@ -128,12 +137,12 @@ class TVShowsViewModel @Inject constructor(
         }
     }
 
-    fun getPhotos(seriesId: Int) {
-        repository.getTvShowPhotos(seriesId) { photosResponse ->
-            if (photosResponse.isSuccessful) {
-                _tvShowImages.value = photosResponse.body()
-            }
-        }
+    fun getPhotos(seriesId: Int) : Flow<PagingData<Photos>> {
+        return repository.getShowImages(seriesId).cachedIn(viewModelScope)
+    }
+
+    fun getReviews(movieId: Int): Flow<PagingData<Reviews>> {
+        return repository.getReviews(movieId).cachedIn(viewModelScope)
     }
 
     suspend fun getTotalPagesPopular() : Int  {

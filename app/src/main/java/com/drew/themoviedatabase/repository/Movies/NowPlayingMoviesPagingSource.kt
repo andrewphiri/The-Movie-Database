@@ -23,15 +23,15 @@ class NowPlayingMoviesPagingSource @Inject constructor(
             // construction. Use 1 as default, because our API is indexed started at index 1
             val pageNumber = params.key ?: 1
 
-            val topratedMovies = movieRepository.fetchNowPlayingMovieDetails(pageNumber)
-            val data = topratedMovies?.filterNotNull() ?: emptyList()
+            val nowPlaying = movieRepository.fetchNowPlayingMovieDetails(pageNumber)
+            val data = nowPlaying?.filterNotNull() ?: emptyList()
 
             // Since 1 is the lowest page number, return null to signify no more pages should
             // be loaded before it.
             val prevKey = if(pageNumber  > 1) pageNumber - 1 else null
             val nextKey = if (data.isNotEmpty()) pageNumber + 1 else null
 
-            if (topratedMovies != null) {
+            if (nowPlaying != null) {
                 LoadResult.Page(
                     data = data,
                     prevKey = prevKey,

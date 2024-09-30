@@ -1,5 +1,7 @@
 package com.drew.themoviedatabase.composeUI
 
+import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.animation.animateContentSize
@@ -42,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -49,6 +52,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -62,13 +66,16 @@ import androidx.paging.compose.LazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.CastMembers
+import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.CombinedCredits
 import com.drew.themoviedatabase.POJO.Crew
+import com.drew.themoviedatabase.POJO.Genre
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Provider
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
+import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.formatDuration
@@ -353,7 +360,6 @@ fun MovieList(
         }
 
     }
-
 }
 
 @Composable
@@ -389,8 +395,7 @@ fun MovieItem(
     ) {
         AsyncImage(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+                .fillMaxWidth(),
             model = NetworkClient().getPosterUrl(movie.posterPath),
             contentDescription = "${movie.title} poster",
             placeholder = painterResource(R.drawable.mdb_1)
@@ -399,8 +404,7 @@ fun MovieItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp)
-                .weight(0.5f),
+                .padding(8.dp),
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -648,7 +652,8 @@ fun CombinedCreditsItem(
 @Composable
 fun YouTubePlayer(
     modifier: Modifier = Modifier,
-    videoId: String
+    videoId: String?,
+    playVideo: String = "event.target.playVideo()"
 ) {
     val htmlData = """
         <!DOCTYPE html>
@@ -666,14 +671,13 @@ fun YouTubePlayer(
               width: 100%;
               height: 100%;
             }
-            .video-container {
-              position: relative;
+            .video-container iframe {
+              position: absolute;
+              top: 0;
+              left: 0;
               width: 100%;
-              padding-bottom: 56.25%; /* 16:9 aspect ratio */
-              height: 0;
-              overflow: hidden;
-            }
-            .video-container iframe,
+              height: 100%;
+            },
             .video-container object,
             .video-container embed {
               position: absolute;
@@ -714,13 +718,13 @@ fun YouTubePlayer(
             }
 
             function onPlayerReady(events) {
-              event.target.playVideo();
+              $playVideo;
               player.unMute();
             }
             
            function onPlayerStateChange(events) {
               if (event.data == YT.PlayerState.CUED) {
-                event.target.playVideo();
+                $playVideo;
               }
             }
           </script>
@@ -728,41 +732,53 @@ fun YouTubePlayer(
         </html>
     """.trimIndent()
 
-    AndroidView(
+    // Constraining the WebView within the box to respect the height and size
+    Box(
         modifier = modifier
-            .background(Color.Black)
-            .height(230.dp)
-            .fillMaxWidth(),
-        factory = { context ->
-            WebView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                settings.javaScriptEnabled = true
-                isVerticalScrollBarEnabled = false
-                isHorizontalScrollBarEnabled = false
-                setBackgroundColor(Color(0xFF171717).toArgb())
-                settings.useWideViewPort = false
-                loadDataWithBaseURL(
+            .height(230.dp) // Explicit height
+            .fillMaxWidth()
+    ) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    settings.javaScriptEnabled = true
+                    isVerticalScrollBarEnabled = false
+                    isHorizontalScrollBarEnabled = false
+                    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+                        setBackgroundColor(Color(0xFF171717).toArgb())
+                    }
+
+                    settings.useWideViewPort = false
+
+                    loadDataWithBaseURL(
+                        "https://www.youtube.com",
+                        htmlData,
+                        "text/html",
+                        "utf-8",
+                        null
+                    )
+
+                }
+            },
+            update = { webView ->
+
+                webView.loadDataWithBaseURL(
                     "https://www.youtube.com",
                     htmlData,
                     "text/html",
                     "utf-8",
-                    null
-                )
-            }
-        },
-        update = { webView ->
-            webView.loadDataWithBaseURL(
-                "https://www.youtube.com",
-                htmlData,
-                "text/html",
-                "utf-8",
-                null
-            )
-        }
-    )
+                    null)
+
+            },
+            modifier = Modifier
+                .height(230.dp) // Explicit height for the WebView
+                .fillMaxWidth()  // Fill the width of the parent container
+        )
+    }
 }
 
 @Composable
@@ -816,6 +832,7 @@ fun CastList(
         )
     }
 }
+
 
 @Composable
 fun TVShowList(
@@ -953,14 +970,13 @@ fun TVShowItem(
 
     ElevatedCard(
         modifier = modifier
-            .height(370.dp)
+            .height(400.dp)
             .width(150.dp),
         onClick = { onItemClick(tvShow.id)}
     ) {
         AsyncImage(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+                .fillMaxWidth(),
             model = NetworkClient().getPosterUrl(tvShow.posterPath),
             contentDescription = "${tvShow.name} poster",
             placeholder = painterResource(R.drawable.mdb_1)
@@ -969,8 +985,7 @@ fun TVShowItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp)
-                .weight(0.5f),
+                .padding(8.dp),
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -1026,7 +1041,6 @@ fun TVShowItem(
 
         if (allProviders != null) {
            ProvidersList(
-               modifier = modifier,
                providers = allProviders.toSet().toList().take(4).sortedBy { it.displayPriority }
            )
         }
@@ -1037,7 +1051,7 @@ fun TVShowItem(
 @Composable
 fun ReviewList(
     modifier: Modifier = Modifier,
-    reviews: List<Reviews?>?,
+    reviews: LazyPagingItems<Reviews>?,
     categoryTitle: String = "",
     onItemClick: () -> Unit
 ) {
@@ -1066,14 +1080,18 @@ fun ReviewList(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            reviews?.size?.let {
-                items(it) { index ->
-                    reviews.get(index)?.let { review ->
-                        ReviewItemCard(
-                            modifier = modifier,
-                            reviews = review,
-                            onItemClick = onItemClick
-                        )
+            reviews?.itemCount.let {
+                if (it != null) {
+                    items(it) { index ->
+                        if (reviews != null) {
+                            reviews.get(index)?.let { review ->
+                                ReviewItemCard(
+                                    modifier = modifier,
+                                    reviews = review,
+                                    onItemClick = onItemClick
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1126,7 +1144,7 @@ fun ReviewItemCard(
 @Composable
 fun PhotosList(
     modifier: Modifier = Modifier,
-    photos: List<Photos?>?,
+    photos: LazyPagingItems<Photos>?,
     categoryTitle: String,
 ) {
     Column(
@@ -1151,15 +1169,15 @@ fun PhotosList(
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text = " ${photos?.size}",
+                text = " ${photos?.itemCount}",
                 style = MaterialTheme.typography.bodySmall
             )
         }
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            photos?.size?.let {
-                items(it) { index ->
+            if (photos != null) {
+                items(photos.itemCount) { index ->
                     photos[index]?.let { photo ->
                         PhotosItem(
                             modifier = modifier,
@@ -1168,6 +1186,7 @@ fun PhotosList(
                     }
                 }
             }
+
         }
     }
 
@@ -1458,4 +1477,114 @@ fun OverviewText(
         overflow = TextOverflow.Ellipsis,
         onTextLayout = { textLayoutResultState.value = it}
     )
+}
+
+@Composable
+fun GenreList(
+    modifier: Modifier = Modifier,
+    genres: List<Genre?>?
+) {
+    LazyRow(
+        modifier = modifier.padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        genres?.size?.let {
+            items(it) { index ->
+                genres.get(index)?.let {
+                    ElevatedCard(
+                        shape = RectangleShape
+                    ) {
+                        Text(
+                            modifier = Modifier.padding(8.dp),
+                            text = it.name,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun VideosList(
+    modifier: Modifier = Modifier,
+    trailers: List<Trailers?>?,
+) {
+        LazyColumn (
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (trailers != null) {
+                items(trailers.size) { index ->
+                    trailers[index]?.let { trailer ->
+
+                            YouTubePlayer(
+                                videoId = trailer.key,
+                                playVideo = ""
+                            )
+                            trailer.name?.let {
+                                Text(
+                                    modifier = Modifier.padding(8.dp),
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                    }
+                }
+            }
+        }
+}
+
+@Composable
+fun MovieTVCertifications(
+    modifier: Modifier = Modifier,
+    ratingMeaning: String,
+    rating: String,
+    categoryTitle: String = "",
+    color: Color,
+) {
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VerticalDivider(
+                modifier = Modifier
+                    .width(6.dp),
+                color = color
+            )
+            Text(
+                text = categoryTitle,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+        ElevatedCard(
+            modifier = Modifier.padding(8.dp),
+            shape = RectangleShape
+        ) {
+            Text(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(8.dp),
+                text = rating,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(8.dp),
+                text = ratingMeaning,
+            )
+    }
+}
+
 }

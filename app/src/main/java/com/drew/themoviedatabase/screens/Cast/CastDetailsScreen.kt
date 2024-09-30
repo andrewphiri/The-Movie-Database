@@ -33,6 +33,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Network.NetworkClient
@@ -64,6 +65,7 @@ fun CastDetailsScreen(
     var personDetails by remember { mutableStateOf<PersonDetails?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var isBiographyShowing by remember { mutableStateOf(false) }
+    val photos = castViewModel.getPersonImages(personId).collectAsLazyPagingItems()
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -133,7 +135,7 @@ fun CastDetailsScreen(
                 if (personDetails?.images?.getPersonPhotos()?.isNotEmpty() == true) {
                     item {
                         PhotosList(
-                            photos = personDetails?.images?.getPersonPhotos(),
+                            photos = photos,
                             categoryTitle = "Photos"
                         )
                     }

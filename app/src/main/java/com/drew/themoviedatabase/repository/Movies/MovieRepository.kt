@@ -1,10 +1,12 @@
 package com.drew.themoviedatabase.repository.Movies
 
+import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.drew.themoviedatabase.Network.API_KEY
 import com.drew.themoviedatabase.Network.CastResponse
+import com.drew.themoviedatabase.Network.CertificationsResponse
 import com.drew.themoviedatabase.Network.MovieApiService
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.MovieImagesResponse
@@ -14,9 +16,13 @@ import com.drew.themoviedatabase.Network.MultiSearchResult
 import com.drew.themoviedatabase.Network.ReviewsResponse
 import com.drew.themoviedatabase.Network.TotalPages
 import com.drew.themoviedatabase.Network.TrailersResponse
+import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.Movie
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
+import com.drew.themoviedatabase.POJO.Photos
+import com.drew.themoviedatabase.POJO.Reviews
+import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
 import com.drew.themoviedatabase.repository.MultiSearchPagingSource
@@ -69,6 +75,34 @@ class MovieRepository @Inject constructor(
         return Pager(
             config = PagingConfig(pageSize = 10),
             pagingSourceFactory = { TrendingMoviesPagingSource(this) }
+        ).flow
+    }
+
+    fun getSimilarMovies(movieId: Int) : Flow<PagingData<MovieDetailsReleaseData>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { SimilarMoviesPagingSource(this, movieId) }
+        ).flow
+    }
+
+    fun getReviews(movieId: Int) : Flow<PagingData<Reviews>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { MoviesReviewsPagingSource(this, movieId) }
+        ).flow
+    }
+
+    fun fetchMultiSearch(query: String) : Flow<PagingData<MultiSearchResult>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { MultiSearchPagingSource(this, query) }
+        ).flow
+    }
+
+    fun getMovieImages(movieId: Int) : Flow<PagingData<Photos>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { MoviePhotosPagingSource(this, movieId) }
         ).flow
     }
 
@@ -305,6 +339,7 @@ class MovieRepository @Inject constructor(
         }
     }
 
+
     suspend fun fetchSimilarMovieDetails(movieId: Int, pages: Int) : List<MovieDetailsReleaseData?>? {
         return try {
             fetchMovieDetails(
@@ -368,7 +403,8 @@ class MovieRepository @Inject constructor(
     fun fetchTrailers(movieId: Int, callback: (Response<TrailersResponse?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                movieApiService.getTrailer(movieId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<TrailersResponse?> {
+                movieApiService.getTrailer(movieId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object :
+                    Callback<TrailersResponse?> {
                     override fun onResponse(
                         p0: Call<TrailersResponse?>,
                         p1: Response<TrailersResponse?>
@@ -386,6 +422,24 @@ class MovieRepository @Inject constructor(
                 e.printStackTrace()
                 callback(Response.success(null))
             }
+        }
+    }
+
+    suspend fun fetchReviews(movieId: Int, page: Int) : List<Reviews?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    val response = movieApiService.getReviews(movieId, apiKey = API_KEY, language = defaultLocale(), page = page)?.execute()
+                    if (response?.isSuccessful == true){
+                        response.body()?.getResults()
+                    } else {
+                        emptyList()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 
@@ -500,32 +554,54 @@ class MovieRepository @Inject constructor(
         }
     }
 
-    fun getMoviePhotos(movieId: Int, callback: (Response<MovieImagesResponse?>) -> Unit) {
+    fun fetchCertifications(callback: (Response<Certifications?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                movieApiService.getMovieImages(
-                    movieId = movieId,
-                    apiKey = API_KEY,
-                    imageLanguage = imageLanguage,
-                    language = defaultLocale()
-                )?.enqueue(object : Callback<MovieImagesResponse?> {
+                movieApiService.getCertifications(apiKey = API_KEY)?.enqueue(object : Callback<Certifications?> {
                     override fun onResponse(
-                        p0: Call<MovieImagesResponse?>,
-                        p1: Response<MovieImagesResponse?>
+                        p0: Call<Certifications?>,
+                        p1: Response<Certifications?>
                     ) {
                         if (p1.isSuccessful) {
                             callback(p1)
                         }
                     }
-
-                    override fun onFailure(p0: Call<MovieImagesResponse?>, p1: Throwable) {
+                    override fun onFailure(p0: Call<Certifications?>, p1: Throwable) {
                         callback(Response.success(null))
                     }
                 })
-            } catch (e: Exception) {
+                } catch (e: Exception) {
+                    callback(Response.success(null))
                 e.printStackTrace()
-                callback(Response.success(null))
             }
+        }
+    }
+
+    suspend fun getMoviePhotos(movieId: Int) : List<Photos?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    try {
+                      val response = movieApiService.getMovieImages(
+                            movieId = movieId,
+                            apiKey = API_KEY,
+                            imageLanguage = imageLanguage,
+                            language = defaultLocale()
+                        )?.execute()
+                        if (response?.isSuccessful == true) {
+                            response.body()?.getAllImages()
+                        } else {
+                            emptyList()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        emptyList()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
         }
     }
 

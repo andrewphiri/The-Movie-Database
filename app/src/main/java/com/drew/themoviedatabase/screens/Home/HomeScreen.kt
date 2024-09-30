@@ -136,7 +136,7 @@ fun HomeScreen(
     // UI
     Scaffold(
         modifier = modifier,
-        contentWindowInsets = WindowInsets(0.dp)
+        contentWindowInsets = WindowInsets(top = 20.dp)
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -305,21 +305,6 @@ fun HomeScreen(
     }
 }
 
-@Composable
-fun SmoothScrolling(
-    listState: LazyListState
-) {
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-            .collect{ visibleItems ->
-                val totalItems = listState.layoutInfo.totalItemsCount
-                val lastVisibleItem = visibleItems.lastOrNull()?.index ?: 0
-                if (lastVisibleItem >= totalItems - 1) {
-//                    listState.scroll()
-                }
-            }
-    }
-}
 
 
 

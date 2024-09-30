@@ -3,11 +3,16 @@ package com.drew.themoviedatabase.screens.Cast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.drew.themoviedatabase.Network.CombinedCreditsResponse
 import com.drew.themoviedatabase.Network.PersonPhotosResponse
 import com.drew.themoviedatabase.POJO.PersonDetails
+import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.repository.PersonRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,12 +36,8 @@ class CastViewModel @Inject constructor(
         }
     }
 
-    fun getPersonImages(personId: Int) {
-        repository.getPersonImages(personId) { response ->
-            if (response.isSuccessful) {
-                _personImages.value = response.body()
-            }
-        }
+    fun getPersonImages(personId: Int) : Flow<PagingData<Photos>> {
+        return (repository.getCastImagesPager(personId).cachedIn(viewModelScope))
     }
 
     fun getCombinedCredits(personId: Int) {

@@ -2,6 +2,7 @@ package com.drew.themoviedatabase.screens.Search
 
 import android.app.appsearch.SearchResults
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -34,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,10 +76,7 @@ fun SearchScreen(
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val searchResultsPager = moviesViewModel
-        .getMultiSearch(searchQuery)
-        .cachedIn(moviesViewModel.viewModelScope)
-
-    val lazyPagingSearchItems = searchResultsPager.collectAsLazyPagingItems()
+        .getMultiSearch(searchQuery).collectAsLazyPagingItems()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -83,18 +84,21 @@ fun SearchScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 32.dp),
+                    .background(Color.Transparent),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
                 SearchTextField(
+                    modifier = Modifier
+                        .padding(top = 32.dp)
+                        .background(Color.Transparent),
                     searchItem = searchQuery,
                 ) {
                     searchQuery = it
                 }
                 SearchResults(
-                    searchResults = lazyPagingSearchItems,
+                    searchResults = searchResultsPager,
                     navigateToMovieDetailsScreen = navigateToMovieDetailsScreen,
                     navigateToCastDetailsScreen = navigateToCastDetailsScreen,
                     navigateToTVShowDetailsScreen = navigateToTVShowDetailsScreen
@@ -150,13 +154,14 @@ fun SearchTextField(
     searchItem: String,
     onValueChange: (String) -> Unit,
 ) {
-   Box {
+   Box(modifier = modifier) {
        Row(
            verticalAlignment = Alignment.CenterVertically,
            horizontalArrangement = Arrangement.spacedBy(16.dp)
        ) {
-           TextField(
-               modifier = Modifier.weight(3f, true),
+           OutlinedTextField(
+               modifier = Modifier
+                   .weight(3f, true),
                value = searchItem,
                onValueChange = onValueChange,
                leadingIcon = {

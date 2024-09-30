@@ -1,6 +1,7 @@
 package com.drew.themoviedatabase.screens.Details
 
 import android.content.res.Resources
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,10 +46,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.os.ConfigurationCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.MovieTopAppBar
+import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
+import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Provider
 import com.drew.themoviedatabase.POJO.Reviews
@@ -57,12 +62,15 @@ import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.composeUI.CastList
 import com.drew.themoviedatabase.composeUI.ExpandableText
+import com.drew.themoviedatabase.composeUI.GenreList
+import com.drew.themoviedatabase.composeUI.MovieTVCertifications
 import com.drew.themoviedatabase.composeUI.OverviewText
 import com.drew.themoviedatabase.composeUI.PhotosList
 import com.drew.themoviedatabase.composeUI.ProvidersList
 import com.drew.themoviedatabase.composeUI.RatingsAndVotes
 import com.drew.themoviedatabase.composeUI.ReviewList
 import com.drew.themoviedatabase.composeUI.TVShowList
+import com.drew.themoviedatabase.composeUI.VideosList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
 import com.drew.themoviedatabase.screens.Home.TVShowsViewModel
 import com.drew.themoviedatabase.ui.theme.DarkOrange
@@ -85,48 +93,44 @@ fun TVDetailsScreen(
     navigateToTVShowDetails: (Int) -> Unit = {},
     tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
-    navigateToReviews: (Int) -> Unit
+    navigateToReviews: (Int) -> Unit,
+    navigateToTrailers: (Int) -> Unit
 ) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val coroutineScope = rememberCoroutineScope()
-    var trailers by remember {
-        mutableStateOf(listOf<Trailers?>())
-    }
-    var isLoading by remember { mutableStateOf(true) }
-    var isTrailersEmpty by remember { mutableStateOf(trailers.isEmpty()) }
 
-    var tvDetails by remember { mutableStateOf<TVShowDetailsWithCastAndVideos?>(null) }
-    var similarTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
-    var reviews by remember { mutableStateOf<List<Reviews?>?>(null) }
-    val photos: SnapshotStateList<Photos>? = remember { mutableStateListOf() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var isLoading by remember { mutableStateOf(true) }
+    var isTrailersEmpty by remember { mutableStateOf(true) }
+
+    val tvDetails by tvShowsViewModel.tvShowsWithCastAndVideos.observeAsState()
+    var similarTVShows = tvShowsViewModel.getSimilarTVShows(seriesId).collectAsLazyPagingItems()
+    val reviews  = tvShowsViewModel.getReviews(seriesId).collectAsLazyPagingItems()
+    val photos = tvShowsViewModel.getPhotos(seriesId).collectAsLazyPagingItems()
+    val certifications by tvShowsViewModel.certifications.observeAsState()
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             async { tvShowsViewModel.fetchTVDetailsWithCastAndVideos(seriesId) }.await()
-            async { tvShowsViewModel.fetchSimilarTVShows(seriesId, 3) }.await()
+            async { tvShowsViewModel.fetchCertifications() }.await()
             async { tvShowsViewModel.fetchReviews(seriesId) }.await()
-            async { tvShowsViewModel.getPhotos(seriesId) }.await()
+            //async { tvShowsViewModel.getPhotos(seriesId) }.await()
         }
     }
+    //Log.d("TVCertifications", "MovieCertifications: $certifications")
 
-    tvShowsViewModel.tvShowsWithCastAndVideos.observe(lifecycleOwner) {
-        tvDetails = it
-    }
+//    tvShowsViewModel.tvShowsWithCastAndVideos.observe(lifecycleOwner) {
+//        tvDetails = it
+//    }
+//
+//    tvShowsViewModel.reviews.observe(lifecycleOwner) {
+//        reviews = it
+//    }
 
-    tvShowsViewModel.similarTVShows.observe(lifecycleOwner) {
-        similarTVShows = it
-    }
-
-    tvShowsViewModel.reviews.observe(lifecycleOwner) {
-        reviews = it
-    }
-
-    tvShowsViewModel.tvShowImages.observe(lifecycleOwner) {
-        photos?.addAll(it?.logos ?: emptyList())
-        photos?.addAll(it?.posters ?: emptyList())
-        photos?.addAll(it?.backdrops ?: emptyList())
-    }
+//    tvShowsViewModel.tvShowImages.observe(lifecycleOwner) {
+//        photos?.addAll(it?.logos ?: emptyList())
+//        photos?.addAll(it?.posters ?: emptyList())
+//        photos?.addAll(it?.backdrops ?: emptyList())
+//    }
 
 
     if (tvDetails != null) {
@@ -167,9 +171,19 @@ fun TVDetailsScreen(
                     TVDetailsCard(
                         tvShow = tvDetails ,
                         trailers = tvDetails?.videos?.getResults(),
-                        isTrailersEmpty = isTrailersEmpty
+                        isTrailersEmpty = isTrailersEmpty,
+                        navigateToTrailers = { navigateToTrailers(seriesId) }
                     )
                 }
+
+                if (tvDetails?.genres?.isNotEmpty() == true) {
+                    item {
+                        GenreList(
+                            genres = tvDetails?.genres
+                        )
+                    }
+                }
+
                 if (tvDetails?.watchProviders?.results?.isNotEmpty() == true) {
                     item {
                         TVWatchProviderList(
@@ -200,7 +214,8 @@ fun TVDetailsScreen(
                     )
                 }
 
-                if (similarTVShows?.isNotEmpty() == true) {
+
+                if (similarTVShows != null) {
                     item {
                         TVShowList(
                             tvShows = similarTVShows,
@@ -210,7 +225,7 @@ fun TVDetailsScreen(
                     }
                 }
 
-                if (reviews?.isNotEmpty() == true) {
+                if (reviews != null) {
                     item {
                         ReviewList(
                             reviews = reviews,
@@ -220,11 +235,20 @@ fun TVDetailsScreen(
                     }
                 }
 
-                if (photos?.isNotEmpty() == true ) {
+                if (photos != null) {
                     item {
                         PhotosList(
-                            photos = photos.shuffled(),
+                            photos = photos,
                             categoryTitle = "Photos" )
+                    }
+                }
+
+                if (certifications != null) {
+                    item {
+                        TVCertifications(
+                            certifications = certifications,
+                            tvShow = tvDetails
+                        )
                     }
                 }
             }
@@ -237,14 +261,12 @@ fun TVDetailsCard(
     modifier: Modifier = Modifier,
     tvShow: TVShowDetailsWithCastAndVideos?,
     trailers: List<Trailers?>?,
-    isTrailersEmpty: Boolean = false
+    isTrailersEmpty: Boolean = false,
+    navigateToTrailers: () -> Unit
 ) {
     val ageRate = tvShow?.contentRatings
         ?.results?.find { it.iso31661 == "US" }?.rating ?: ""
 
-    var isExpanded by remember { mutableStateOf(false) }
-    var isClickable by remember { mutableStateOf(false) }
-    val finalText by remember { mutableStateOf(buildAnnotatedString { append(tvShow?.overview ?: "") }) }
 
     Column(
         modifier = modifier,
@@ -287,13 +309,13 @@ fun TVDetailsCard(
                 style = MaterialTheme.typography.bodySmall
             )
         }
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(230.dp)
         ) {
             if (isTrailersEmpty) {
-                Box(modifier = Modifier.fillMaxSize()) {
+
                     Text(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -301,13 +323,26 @@ fun TVDetailsCard(
                         text = "No trailers found",
                         textAlign = TextAlign.Center
                     )
-                }
             } else {
                 YouTubePlayer(
                     modifier = modifier,
                     videoId = findPreferredVideo(trailers) ?: ""
                 )
             }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Text(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .clickable { navigateToTrailers() },
+                text = "See more videos",
+                color = Color.Cyan,
+            )
         }
 
         Row(
@@ -505,5 +540,26 @@ fun TVWatchProviderList(
                 style = MaterialTheme.typography.bodyMedium
             )
         }
+    }
+}
+
+@Composable
+fun TVCertifications(
+    certifications: Certifications?,
+    tvShow: TVShowDetailsWithCastAndVideos?,
+) {
+
+    val ageRate = tvShow?.contentRatings
+        ?.results?.find { it.iso31661 == getWatchRegion() }?.rating ?: ""
+    val cert = certifications?.certifications?.get(getWatchRegion())
+        ?.find { it.certification == ageRate }
+
+    if (cert != null) {
+        MovieTVCertifications(
+            rating = "Rated $ageRate",
+            ratingMeaning = cert.meaning,
+            color = Color.Red,
+            categoryTitle = "Parental Guide"
+        )
     }
 }

@@ -10,4 +10,12 @@ data class MovieImagesResponse(
     val logos: List<Photos>?,
     @SerializedName("posters")
     val posters: List<Photos>?
-)
+) {
+    fun getAllImages() : List<Photos> {
+        val allImages = mutableListOf<Photos>()
+        backdrops?.let { allImages.addAll(it) }
+        logos?.let { allImages.addAll(it) }
+        posters?.let { allImages.addAll(it) }
+        return allImages
+    }
+}

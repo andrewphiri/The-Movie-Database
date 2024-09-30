@@ -4,6 +4,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.drew.themoviedatabase.Network.API_KEY
+import com.drew.themoviedatabase.Network.CertificationsResponse
 import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.ReviewsResponse
 import com.drew.themoviedatabase.Network.TVShowApiService
@@ -11,8 +12,12 @@ import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
 import com.drew.themoviedatabase.Network.TVShowsResponse
 import com.drew.themoviedatabase.Network.TotalPages
 import com.drew.themoviedatabase.Network.TrailersResponse
+import com.drew.themoviedatabase.POJO.Certifications
+import com.drew.themoviedatabase.POJO.Photos
+import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShow
 import com.drew.themoviedatabase.POJO.TVShowDetails
+import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
 import kotlinx.coroutines.CoroutineScope
@@ -56,6 +61,27 @@ class TVShowsRepository@Inject constructor(
         return Pager(
             config = PagingConfig(pageSize = 10),
             pagingSourceFactory = { AiringTodayPagingSource(this) }
+        ).flow
+    }
+
+    fun getSimilarTVShows(seriesId: Int) : Flow<PagingData<TVShowDetails>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { SimilarTVShowsPagingSource(this, seriesId) }
+        ).flow
+    }
+
+    fun getShowImages(seriesId: Int) : Flow<PagingData<Photos>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { TVShowPhotosPagingSource(this, seriesId) }
+        ).flow
+    }
+
+    fun getReviews(seriesId: Int) : Flow<PagingData<Reviews>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { TVReviewsPagingSource(this, seriesId) }
         ).flow
     }
 
@@ -326,7 +352,7 @@ class TVShowsRepository@Inject constructor(
 
     fun getTVShowReviews(seriesId: Int, callback: (Response<ReviewsResponse?>) -> Unit) {
             try {
-                tvShowApiService.getTVShowReviews(seriesId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object : Callback<ReviewsResponse?> {
+                tvShowApiService.getTVShowReviews(seriesId, apiKey = API_KEY, language = defaultLocale(), page = 1)?.enqueue(object : Callback<ReviewsResponse?> {
                     override fun onResponse(
                         p0: Call<ReviewsResponse?>,
                         p1: Response<ReviewsResponse?>
@@ -372,7 +398,56 @@ class TVShowsRepository@Inject constructor(
             callback(Response.success(null))
         }
     }
+    suspend fun getShowPhotos(seriesId: Int) : List<Photos?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    try {
+                        val response = tvShowApiService.getTVShowImages(
+                            movieId = seriesId,
+                            apiKey = API_KEY,
+                            imageLanguage = imageLanguage,
+                            language = defaultLocale()
+                        )?.execute()
+                        if (response?.isSuccessful == true) {
+                            response.body()?.getAllImages()
+                        } else {
+                            emptyList()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        emptyList()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
 
+    fun fetchCertifications(callback: (Response<Certifications?>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                tvShowApiService.getCertifications(apiKey = API_KEY)?.enqueue(object : Callback<Certifications?> {
+                    override fun onResponse(
+                        p0: Call<Certifications?>,
+                        p1: Response<Certifications?>
+                    ) {
+                        if (p1.isSuccessful) {
+                            callback(p1)
+                        }
+                    }
+                    override fun onFailure(p0: Call<Certifications?>, p1: Throwable) {
+                        callback(Response.success(null))
+                    }
+                })
+            } catch (e: Exception) {
+                callback(Response.success(null))
+                e.printStackTrace()
+            }
+        }
+    }
 
     fun fetchTrailers(seriesId: Int, callback: (Response<TrailersResponse?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -398,6 +473,44 @@ class TVShowsRepository@Inject constructor(
             }
         }
     }
+
+//    suspend fun fetchTrailers(movieId: Int) : List<Trailers?>? {
+//        return try {
+//            coroutineScope {
+//                withContext(Dispatchers.IO) {
+//                    val response = tvShowApiService.getTVShowTrailer(movieId, apiKey = API_KEY, language = defaultLocale())?.execute()
+//
+//                    if (response?.isSuccessful == true){
+//                        response.body()?.getResults()
+//                    } else {
+//                        emptyList()
+//                    }
+//                }
+//            }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//            null
+//        }
+//    }
+
+    suspend fun fetchReviews(movieId: Int, page: Int) : List<Reviews?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    val response = tvShowApiService.getTVShowReviews(movieId, apiKey = API_KEY, language = defaultLocale(), page = page)?.execute()
+                    if (response?.isSuccessful == true){
+                        response.body()?.getResults()
+                    } else {
+                        emptyList()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
 
 
     fun fetchTVShowsDetailsWithCastAndVideos(seriesId: Int, callback: (Response<TVShowDetailsWithCastAndVideos?>) -> Unit) {

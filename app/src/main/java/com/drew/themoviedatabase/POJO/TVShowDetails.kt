@@ -33,7 +33,7 @@ data class TVShowDetails(
     @SerializedName("origin_country")
     val originCountry: List<String>,
     @SerializedName("genres")
-    val genres: List<TVGenre>,
+    val genres: List<Genre>,
     @SerializedName("created_by")
     val createdBy: List<Creator>,
     @SerializedName("networks")
@@ -54,13 +54,6 @@ data class TVShowDetails(
     val contentRatings: ContentRatingResponse?,
     @SerializedName("watch/providers")
     val watchProviders: TVProvidersResponse
-)
-
-data class TVGenre(
-    @SerializedName("id")
-    val id: Int,
-    @SerializedName("name")
-    val name: String
 )
 
 

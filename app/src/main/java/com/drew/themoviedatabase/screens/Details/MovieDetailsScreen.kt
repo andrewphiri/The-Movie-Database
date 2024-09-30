@@ -1,6 +1,7 @@
 package com.drew.themoviedatabase.screens.Details
 
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,10 +47,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.NetworkClient
+import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Provider
@@ -58,12 +63,15 @@ import com.drew.themoviedatabase.Utilities.currencyFormatter
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.composeUI.CastList
+import com.drew.themoviedatabase.composeUI.GenreList
 import com.drew.themoviedatabase.composeUI.MovieList
+import com.drew.themoviedatabase.composeUI.MovieTVCertifications
 import com.drew.themoviedatabase.composeUI.OverviewText
 import com.drew.themoviedatabase.composeUI.PhotosList
 import com.drew.themoviedatabase.composeUI.ProvidersList
 import com.drew.themoviedatabase.composeUI.RatingsAndVotes
 import com.drew.themoviedatabase.composeUI.ReviewList
+import com.drew.themoviedatabase.composeUI.VideosList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
 import com.drew.themoviedatabase.formatDuration
 import com.drew.themoviedatabase.screens.Home.MoviesViewModel
@@ -86,49 +94,43 @@ fun MovieDetailsScreen(
     navigateToDetails: (Int) -> Unit = {},
     moviesViewModel: MoviesViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
-    navigateToReviews: (Int) -> Unit
+    navigateToReviews: (Int) -> Unit,
+    navigateToTrailers: (Int) -> Unit,
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
-    val trailers by remember {
-        mutableStateOf(listOf<Trailers?>())
-    }
-    var isLoading by remember { mutableStateOf(true) }
-    var isTrailersEmpty by remember { mutableStateOf(trailers.isEmpty()) }
 
-    var movieDetails by remember { mutableStateOf<MovieDetailsResponse?>(null) }
-    var similarMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
-    var reviews by remember { mutableStateOf<List<Reviews?>?>(null) }
-    val photos: SnapshotStateList<Photos>? = remember { mutableStateListOf()}
+    var isLoading by remember { mutableStateOf(true) }
+    var isTrailersEmpty by remember { mutableStateOf(true) }
+
+    val movieDetails by moviesViewModel.movieDetailsWithCastAndVideos.observeAsState()
+    var similarMovies = moviesViewModel.getSimilarMovies(movieId).collectAsLazyPagingItems()
+    val reviews = moviesViewModel.getReviews(movieId).collectAsLazyPagingItems()
+    val photos = moviesViewModel.getPhotos(movieId).collectAsLazyPagingItems()
+    val certifications by moviesViewModel.certifications.observeAsState()
 
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-           async { moviesViewModel.fetchMovieDetailsWithCastAndVideos(movieId) }.await()
-            async { moviesViewModel.fetchSimilarMovies(movieId = movieId, pages = 1) }.await()
+            async { moviesViewModel.fetchMovieDetailsWithCastAndVideos(movieId) }.await()
+           async { moviesViewModel.fetchCertifications()}.await()
             async { moviesViewModel.getReviews(movieId) }.await()
-            async { moviesViewModel.getPhotos(movieId) }.await()
         }
     }
 
+//    moviesViewModel.movieDetailsWithCastAndVideos.observe(lifecycleOwner) {
+//        movieDetails = it
+//    }
 
-    moviesViewModel.movieDetailsWithCastAndVideos.observe(lifecycleOwner) {
-        movieDetails = it
-    }
+//    moviesViewModel.certifications.observe(lifecycleOwner) {
+//        certifications = it
+//    }
+    //Log.d("MovieCertifications", "MovieCertifications: $certifications")
 
-    moviesViewModel.similarMovies.observe(lifecycleOwner) {
-        similarMovies = it
-    }
+    //moviesViewModel.fetchCertifications()
 
-    moviesViewModel.reviews.observe(lifecycleOwner) {
-        reviews = it
-    }
-
-    moviesViewModel.movieImages.observe(lifecycleOwner) {
-        photos?.addAll(it?.logos ?: emptyList())
-        photos?.addAll(it?.posters ?: emptyList())
-        photos?.addAll(it?.backdrops ?: emptyList())
-    }
+//    moviesViewModel.reviews.observe(lifecycleOwner) {
+//        reviews = it
+//    }
 
 
     if (movieDetails != null) {
@@ -141,7 +143,7 @@ fun MovieDetailsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0.dp),
+        contentWindowInsets = WindowInsets(top = 16.dp),
         topBar = {
             MovieTopAppBar(
                 canNavigateBack = canNavigateBack,
@@ -170,12 +172,19 @@ fun MovieDetailsScreen(
                     MovieDetailsCard(
                         movieDetails = movieDetails,
                         trailers = movieDetails?.videos?.getResults(),
-                        isTrailersEmpty = isTrailersEmpty
+                        isTrailersEmpty = isTrailersEmpty,
+                        navigateToTrailers = { navigateToTrailers(movieId) }
                     )
                 }
+                    if (movieDetails?.genres?.isNotEmpty() == true) {
+                        item {
+                            GenreList(
+                                genres = movieDetails?.genres
+                            )
+                        }
+                    }
 
                     if (movieDetails?.watchProviders?.results?.isNotEmpty() == true) {
-
                         item {
                             MovieWatchProviderList(
                                 movie = movieDetails
@@ -197,12 +206,14 @@ fun MovieDetailsScreen(
                         navigateToCastDetailsScreen = navigateToCastDetails
                     )
                 }
+
                 item {
                     OtherMovieDetailsCard(
                         movieDetails = movieDetails
                     )
                 }
-                    if (similarMovies?.isNotEmpty() == true) {
+
+                    if (similarMovies != null) {
                         item {
                             MovieList(
                                 movies = similarMovies,
@@ -213,8 +224,7 @@ fun MovieDetailsScreen(
                         }
                     }
 
-
-                    if (reviews?.isNotEmpty() == true) {
+                    if (reviews != null) {
                         item {
                             ReviewList(
                                 reviews = reviews,
@@ -224,13 +234,23 @@ fun MovieDetailsScreen(
                         }
                     }
 
-                    if (photos?.isNotEmpty() == true ) {
+                    if (photos != null ) {
                         item {
                             PhotosList(
-                                photos = photos.shuffled(),
+                                photos = photos,
                                 categoryTitle = "Photos" )
                         }
                     }
+
+                    if (certifications != null) {
+                        item {
+                            MovieCertifications(
+                                certifications = certifications,
+                                movie = movieDetails
+                            )
+                        }
+                    }
+
             }
         }
     }
@@ -241,10 +261,11 @@ fun MovieDetailsCard(
     modifier: Modifier = Modifier,
     movieDetails: MovieDetailsResponse?,
     trailers: List<Trailers?>?,
-    isTrailersEmpty: Boolean = false
+    isTrailersEmpty: Boolean = false,
+    navigateToTrailers: () -> Unit
 ) {
     val ageRate = movieDetails?.certifications?.results
-        ?.find { it.iso31661 == "US" }?.releaseDates?.
+        ?.find { it.iso31661 == getWatchRegion() }?.releaseDates?.
         find { it.certification != "" }?.certification ?: ""
 
     Column(
@@ -283,13 +304,12 @@ fun MovieDetailsCard(
                 style = MaterialTheme.typography.bodySmall
             )
         }
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(230.dp)
         ) {
             if (isTrailersEmpty) {
-                Box(modifier = Modifier.fillMaxSize()) {
                     Text(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -297,15 +317,28 @@ fun MovieDetailsCard(
                         text = "No trailers found",
                         textAlign = TextAlign.Center
                         )
-                }
+
             } else {
                 YouTubePlayer(
-                    modifier = modifier,
-                    videoId = findPreferredVideo(trailers) ?: ""
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    videoId = findPreferredVideo(trailers) ?: "",
                 )
             }
-
         }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Text(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .clickable { navigateToTrailers() },
+                text = "See more videos",
+                color = Color.Cyan,
+            )
+        }
+
 
         Row(
             modifier = Modifier
@@ -494,6 +527,29 @@ fun MovieWatchProviderList(
             style = MaterialTheme.typography.bodyMedium
         )
 
+    }
+}
+
+@Composable
+fun MovieCertifications(
+    certifications: Certifications?,
+    movie: MovieDetailsResponse?,
+) {
+
+    val ageRate = movie?.certifications?.results
+        ?.find { it.iso31661 == getWatchRegion() }?.releaseDates?.
+        find { it.certification != "" }?.certification ?: ""
+    val cert = certifications?.certifications?.get(getWatchRegion())
+        ?.find { it.certification == ageRate }
+
+
+    if (cert != null) {
+        MovieTVCertifications(
+            rating = "Rated $ageRate",
+            ratingMeaning = cert.meaning,
+            color = Color.Red,
+            categoryTitle = "Parental Guide"
+        )
     }
 }
 

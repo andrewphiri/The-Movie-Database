@@ -21,6 +21,10 @@ import com.drew.themoviedatabase.screens.Reviews.MovieUserReviewsScreen
 import com.drew.themoviedatabase.screens.Reviews.TVReviewsScreen
 import com.drew.themoviedatabase.screens.Reviews.TVUserReviewsScreen
 import com.drew.themoviedatabase.screens.Search.SearchScreen
+import com.drew.themoviedatabase.screens.Videos.MovieTrailersScreen
+import com.drew.themoviedatabase.screens.Videos.MovieTrailersNavScreen
+import com.drew.themoviedatabase.screens.Videos.TvTrailersNavScreen
+import com.drew.themoviedatabase.screens.Videos.TvTrailersScreen
 import com.drew.themoviedatabase.screens.Videos.VideosScreen
 
 @Composable
@@ -76,100 +80,127 @@ fun NavGraphBuilder.detailsNavGraph(
     navigation<DetailsGraph>(
         startDestination = DetailsMovieScreen(0),
     ) {
-                composable<DetailsMovieScreen> {
-                    val args = it.toRoute<DetailsMovieScreen>()
-                    MovieDetailsScreen(
-                        movieId = args.movieId,
-                        navigateUp = { navController.navigateUp() },
-                        navigateToDetails = { movieId ->
-                            navController.navigate(
-                                DetailsMovieScreen(
-                                    movieId = movieId,
-                                )
-                            )
-                        },
-                        navigateToCastDetails = {personId ->
+        composable<DetailsMovieScreen> {
+            val args = it.toRoute<DetailsMovieScreen>()
+            MovieDetailsScreen(
+                movieId = args.movieId,
+                navigateUp = { navController.navigateUp() },
+                navigateToDetails = { movieId ->
+                    navController.navigate(
+                        DetailsMovieScreen(
+                            movieId = movieId,
+                        )
+                    )
+                },
+                navigateToCastDetails = { personId ->
 
-                            navController.navigate(
-                                PersonDetailsScreen(
-                                    personId = personId
-                                )
-                            )
-                        },
-                        navigateToReviews = {id ->
-                            navController.navigate(
-                                MoviesReviewsScreen(
-                                    id = id
-                                )
-                            )
-                        }
+                    navController.navigate(
+                        PersonDetailsScreen(
+                            personId = personId
+                        )
+                    )
+                },
+                navigateToReviews = { id ->
+                    navController.navigate(
+                        MoviesReviewsScreen(
+                            id = id
+                        )
+                    )
+                },
+                navigateToTrailers = { id ->
+                    navController.navigate(
+                        MovieTrailersNavScreen(
+                            movieID = id
+                        )
                     )
                 }
-                composable<DetailsTVScreen> {
-                    val args = it.toRoute<DetailsTVScreen>()
-                    TVDetailsScreen(
-                        seriesId = args.seriesId,
-                        navigateUp = { navController.navigateUp() },
-                        navigateToTVShowDetails = { movieId ->
-                            navController.navigate(
-                                DetailsTVScreen(
-                                    seriesId = movieId,
-                                )
-                            )
-                        },
-                        navigateToCastDetails = {personId ->
-                            navController.navigate(
-                                PersonDetailsScreen(
-                                    personId = personId
-                                )
-                            )
-                        },
-                        navigateToReviews = {id ->
-                            navController.navigate(
-                                TVReviewsScreen(
-                                    id = id
-                                )
-                            )
-                        }
-                    )
-                }
-                composable<PersonDetailsScreen> {
-                    val args = it.toRoute<PersonDetailsScreen>()
-                    CastDetailsScreen(
-                        personId = args.personId,
-                        navigateUp = { navController.navigateUp() },
-                        navigateToMovieDetails = { movieId ->
-                            navController.navigate(
-                                DetailsMovieScreen(
-                                    movieId = movieId,
-                                )
-                            )
-                        },
-                        navigateToTVShowDetails = { seriesId ->
-                            navController.navigate(
-                                DetailsTVScreen(
-                                    seriesId = seriesId,
-                                )
-                            )
-                        }
-                    )
-                }
-                composable<MoviesReviewsScreen>{
-                    val args = it.toRoute<MoviesReviewsScreen>()
-                    MovieUserReviewsScreen(
-                        id = args.id,
-                        onNavigateBack = { navController.navigateUp()}
-                    )
-                }
-                composable<TVReviewsScreen> {
-                    val args = it.toRoute<TVReviewsScreen>()
-                    TVUserReviewsScreen(
-                        id = args.id,
-                        onNavigateBack = { navController.navigateUp()}
-                    )
-                }
-
+            )
         }
+        composable<DetailsTVScreen> {
+            val args = it.toRoute<DetailsTVScreen>()
+            TVDetailsScreen(
+                seriesId = args.seriesId,
+                navigateUp = { navController.navigateUp() },
+                navigateToTVShowDetails = { movieId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = movieId,
+                        )
+                    )
+                },
+                navigateToCastDetails = { personId ->
+                    navController.navigate(
+                        PersonDetailsScreen(
+                            personId = personId
+                        )
+                    )
+                },
+                navigateToReviews = { id ->
+                    navController.navigate(
+                        TVReviewsScreen(
+                            id = id
+                        )
+                    )
+                },
+                navigateToTrailers = { id ->
+                    navController.navigate(
+                        TvTrailersNavScreen(
+                            seriesID = id
+                        )
+                    )
+                }
+            )
+        }
+        composable<PersonDetailsScreen> {
+            val args = it.toRoute<PersonDetailsScreen>()
+            CastDetailsScreen(
+                personId = args.personId,
+                navigateUp = { navController.navigateUp() },
+                navigateToMovieDetails = { movieId ->
+                    navController.navigate(
+                        DetailsMovieScreen(
+                            movieId = movieId,
+                        )
+                    )
+                },
+                navigateToTVShowDetails = { seriesId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = seriesId,
+                        )
+                    )
+                }
+            )
+        }
+        composable<MoviesReviewsScreen> {
+            val args = it.toRoute<MoviesReviewsScreen>()
+            MovieUserReviewsScreen(
+                id = args.id,
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+        composable<TVReviewsScreen> {
+            val args = it.toRoute<TVReviewsScreen>()
+            TVUserReviewsScreen(
+                id = args.id,
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+        composable<MovieTrailersNavScreen> {
+            val args = it.toRoute<MovieTrailersNavScreen>()
+            MovieTrailersScreen(
+                movieID = args.movieID,
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+        composable<TvTrailersNavScreen> {
+            val args = it.toRoute<TvTrailersNavScreen>()
+            TvTrailersScreen(
+                seriesID = args.seriesID,
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+    }
 
 }
 

@@ -8,12 +8,15 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.drew.themoviedatabase.Network.CertificationsResponse
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
 import com.drew.themoviedatabase.Network.MovieImagesResponse
 import com.drew.themoviedatabase.Network.MultiSearchResult
 import com.drew.themoviedatabase.POJO.CastMembers
+import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.MovieDetails
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
+import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.repository.Movies.MovieRepository
@@ -29,7 +32,6 @@ import javax.inject.Inject
 @HiltViewModel
 class MoviesViewModel @Inject constructor(
     private val repository: MovieRepository,
-
     ) : ViewModel() {
 
     val moviesPopular = repository.getPopularMovies().cachedIn(viewModelScope)
@@ -74,6 +76,9 @@ class MoviesViewModel @Inject constructor(
     private val _reviews = MutableLiveData<List<Reviews?>?>()
     val reviews: LiveData<List<Reviews?>?> get()  = _reviews
 
+    private val _certifications = MutableLiveData<Certifications?>()
+    val certifications: LiveData<Certifications?> get()  = _certifications
+
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> get() = _isLoading
 
@@ -87,28 +92,17 @@ class MoviesViewModel @Inject constructor(
     val movieImages: LiveData<MovieImagesResponse?> get() = _movieImages
 
 
-//    init {
-//        try {
-//            CoroutineScope(Dispatchers.IO).launch {
-//                _isLoading.postValue(true)
-//                async { fetchPopularMovies(3) }.await()
-//                async { fetchTopRatedMovies(3) }.await()
-//                async { fetchNowPlayingMovies(3) }.await()
-//                async {
-//                    fetchUpcomingMovies()
-//                }.await()
-//                async { fetchTrendingMovies() }.await()
-//            }
-//        } catch (e : Exception) {
-//            e.printStackTrace()
-//        }
-//    }
 
     fun getMultiSearch(query: String) : Flow<PagingData<MultiSearchResult>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { MultiSearchPagingSource(repository, query) }
-        ).flow
+        return repository.fetchMultiSearch(query).cachedIn(viewModelScope)
+    }
+
+    fun getSimilarMovies(movieId: Int) : Flow<PagingData<MovieDetailsReleaseData>> {
+        return repository.getSimilarMovies(movieId).cachedIn(viewModelScope)
+    }
+
+    fun getPhotos(movieId: Int) : Flow<PagingData<Photos>> {
+        return repository.getMovieImages(movieId).cachedIn(viewModelScope)
     }
 
     fun setRefreshing(isRefreshing: Boolean) {
@@ -161,17 +155,11 @@ class MoviesViewModel @Inject constructor(
         }
     }
 
-    fun fetchTrailer(movieId: Int, callback: (List<Trailers>) -> Unit) {
-        repository.fetchTrailers(movieId) {
-            callback(it.body()?.getResults()?.map {
-                Trailers(
-                    name = it.name,
-                    type = it.type,
-                    site = it.site,
-                    key = it.key
-                )
+    fun fetchTrailer(movieId: Int) {
+        repository.fetchTrailers(movieId) { trailersResponse ->
+            if (trailersResponse.isSuccessful) {
+                _trailers.value = trailersResponse.body()?.getResults()
             }
-                ?: emptyList())
         }
     }
 
@@ -200,6 +188,14 @@ class MoviesViewModel @Inject constructor(
         }
     }
 
+    fun fetchCertifications() {
+        repository.fetchCertifications { certificationResponse ->
+            if (certificationResponse.isSuccessful) {
+                _certifications.value = certificationResponse.body()
+            }
+        }
+    }
+
     fun fetchSimilarMovies(movieId: Int, pages: Int) {
         repository.fetchSimilarMovieDetails(movieId, pages) { fetchedMovies ->
             if (fetchedMovies != null) {
@@ -208,21 +204,10 @@ class MoviesViewModel @Inject constructor(
         }
     }
 
-    fun getReviews(movieId: Int) {
-        repository.getMovieReviews(movieId) { reviewsResponse ->
-            if (reviewsResponse.isSuccessful) {
-                _reviews.value = reviewsResponse.body()?.getResults()
-            }
-        }
+    fun getReviews(movieId: Int) :  Flow<PagingData<Reviews>> {
+        return repository.getReviews(movieId).cachedIn(viewModelScope)
     }
 
-    fun getPhotos(movieId: Int) {
-        repository.getMoviePhotos(movieId) { photosResponse ->
-            if (photosResponse.isSuccessful) {
-                _movieImages.value = photosResponse.body()
-            }
-        }
-    }
 
     suspend fun getTotalPagesUpcoming() : Int  {
         return repository.getTotalPagesUpcoming()
