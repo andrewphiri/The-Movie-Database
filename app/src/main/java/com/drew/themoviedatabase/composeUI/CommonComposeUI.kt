@@ -1,12 +1,11 @@
 package com.drew.themoviedatabase.composeUI
 
-import android.content.Context
-import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,14 +13,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -42,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
@@ -66,12 +71,12 @@ import androidx.paging.compose.LazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.CastMembers
-import com.drew.themoviedatabase.POJO.Certifications
 import com.drew.themoviedatabase.POJO.CombinedCredits
 import com.drew.themoviedatabase.POJO.Crew
 import com.drew.themoviedatabase.POJO.Genre
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Photos
+import com.drew.themoviedatabase.POJO.PopularPerson
 import com.drew.themoviedatabase.POJO.Provider
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
@@ -180,6 +185,98 @@ fun CastCard(
 }
 
 @Composable
+fun PopularPersonCard(
+    modifier: Modifier = Modifier,
+    person: PopularPerson?,
+    navigateToCastDetailsScreen: (Int) -> Unit
+) {
+    ElevatedCard(
+        modifier = modifier
+            .width(150.dp)
+            .height(320.dp),
+        onClick = { navigateToCastDetailsScreen(person?.id ?: 0) }
+    ) {
+        AsyncImage(
+            modifier = Modifier
+                .fillMaxWidth(),
+            model = NetworkClient().getPosterUrl(person?.profile_path),
+            contentDescription = "${person?.name} profile picture",
+        )
+        Text(
+            modifier = Modifier.padding(4.dp),
+            text = person?.name ?: "",
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            modifier = Modifier.padding(4.dp),
+            text = "Known for ${person?.known_for_department }" ?: "",
+            style = MaterialTheme.typography.bodySmall,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Text(
+            modifier = Modifier.padding(4.dp),
+            text = "Popularity: ${person?.popularity ?: ""}",
+            style = MaterialTheme.typography.bodySmall,
+            overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+fun MovieList(
+    modifier: Modifier = Modifier,
+    movies: List<MovieDetailsReleaseData?>?,
+    categoryTitle: String = "",
+    color: Color,
+    onItemClick: (Int) -> Unit
+) {
+
+    val watchRegion = getWatchRegion()
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VerticalDivider(
+                modifier = Modifier
+                    .width(6.dp),
+                color = color
+            )
+            Text(
+                text = categoryTitle,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            movies?.size?.let {
+                items(it) { index ->
+                    movies[index]?.let {
+                        MovieItem(
+                            modifier = modifier,
+                            movie = it,
+                            onItemClick = onItemClick,
+                            watchRegion = watchRegion
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+@Composable
 fun CrewCard(
     modifier: Modifier = Modifier,
     crew: List<Crew>
@@ -258,15 +355,14 @@ fun CrewCard(
 
 
 @Composable
-fun MovieList(
+fun PopularPeopleList(
     modifier: Modifier = Modifier,
-    movies: List<MovieDetailsReleaseData?>?,
+    peopleList: LazyPagingItems<PopularPerson>,
     categoryTitle: String = "",
     color: Color,
     onItemClick: (Int) -> Unit
 ) {
 
-    val watchRegion = getWatchRegion()
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -292,15 +388,16 @@ fun MovieList(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            movies?.size?.let {
-                items(it) { index ->
-                    movies[index]?.let {
-                        MovieItem(
-                            modifier = modifier,
-                            movie = it,
-                            onItemClick = onItemClick,
-                            watchRegion = watchRegion
-                        )
+            peopleList?.itemCount.let {
+                if (it != null) {
+                    items(it) { index ->
+                        peopleList[index]?.let {
+                            PopularPersonCard(
+                                modifier = modifier,
+                                person = it,
+                                navigateToCastDetailsScreen = onItemClick
+                            )
+                        }
                     }
                 }
             }
@@ -652,8 +749,7 @@ fun CombinedCreditsItem(
 @Composable
 fun YouTubePlayer(
     modifier: Modifier = Modifier,
-    videoId: String?,
-    playVideo: String = "event.target.playVideo()"
+    videoId: String?
 ) {
     val htmlData = """
         <!DOCTYPE html>
@@ -671,13 +767,14 @@ fun YouTubePlayer(
               width: 100%;
               height: 100%;
             }
-            .video-container iframe {
-              position: absolute;
-              top: 0;
-              left: 0;
+            .video-container {
+              position: relative;
               width: 100%;
-              height: 100%;
-            },
+              padding-bottom: 56.25%; /* 16:9 aspect ratio */
+              height: 0;
+              overflow: hidden;
+            }
+            .video-container iframe,
             .video-container object,
             .video-container embed {
               position: absolute;
@@ -718,13 +815,13 @@ fun YouTubePlayer(
             }
 
             function onPlayerReady(events) {
-              $playVideo;
+              event.target.playVideo();
               player.unMute();
             }
             
            function onPlayerStateChange(events) {
               if (event.data == YT.PlayerState.CUED) {
-                $playVideo;
+                event.target.playVideo();
               }
             }
           </script>
@@ -777,6 +874,136 @@ fun YouTubePlayer(
             modifier = Modifier
                 .height(230.dp) // Explicit height for the WebView
                 .fillMaxWidth()  // Fill the width of the parent container
+        )
+    }
+}
+
+@Composable
+fun YouTubeSinglePlayer(
+    modifier: Modifier = Modifier,
+    videoId: String?,
+) {
+    val htmlData = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: black;
+            }
+            #player {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100vw;
+              height: 100vh;
+            }
+            .video-container {
+              position: relative;
+              width: 100vw;
+              height: 100vh;
+              overflow: hidden;
+            }
+            .video-container iframe,
+            .video-container object,
+            .video-container embed {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="video-container">
+            <div id="player"></div>
+          </div>
+          <script>
+            var tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            var firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+            var player;
+            function onYouTubeIframeAPIReady() {
+              player = new YT.Player('player', {
+                videoId: '$videoId',
+                playerVars: { 
+                'autoplay': 1, 
+                'playsinline': 1, 
+                'mute': 1, 
+                'controls': 1, 
+                'rel': 0 
+                },
+                
+                events: {
+                  'onReady': onPlayerReady,
+                  'onStateChange': onPlayerStateChange
+                }
+              });
+            }
+
+            function onPlayerReady(events) {
+              event.target.playVideo();
+              player.unMute();
+            }
+            
+           function onPlayerStateChange(events) {
+              if (event.data == YT.PlayerState.CUED) {
+                event.target.playVideo();
+              }
+            }
+          </script>
+        </body>
+        </html>
+    """.trimIndent()
+
+    // Constraining the WebView within the box to respect the height and size
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+    ) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    settings.javaScriptEnabled = true
+                    isVerticalScrollBarEnabled = false
+                    isHorizontalScrollBarEnabled = false
+                    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+                        setBackgroundColor(Color(0xFF171717).toArgb())
+                    }
+
+                    settings.useWideViewPort = false
+
+                    loadDataWithBaseURL(
+                        "https://www.youtube.com",
+                        htmlData,
+                        "text/html",
+                        "utf-8",
+                        null
+                    )
+
+                }
+            },
+            update = { webView ->
+
+                webView.loadDataWithBaseURL(
+                    "https://www.youtube.com",
+                    htmlData,
+                    "text/html",
+                    "utf-8",
+                    null)
+
+            },
+            modifier = Modifier
+                .fillMaxSize() // Fill the width of the parent container
         )
     }
 }
@@ -1510,9 +1737,11 @@ fun GenreList(
 fun VideosList(
     modifier: Modifier = Modifier,
     trailers: List<Trailers?>?,
+    listState: LazyListState
 ) {
         LazyColumn (
             modifier = modifier,
+            state = listState,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (trailers != null) {
@@ -1520,8 +1749,7 @@ fun VideosList(
                     trailers[index]?.let { trailer ->
 
                             YouTubePlayer(
-                                videoId = trailer.key,
-                                playVideo = ""
+                                videoId = trailer.key
                             )
                             trailer.name?.let {
                                 Text(
@@ -1572,7 +1800,8 @@ fun MovieTVCertifications(
             shape = RectangleShape
         ) {
             Text(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(8.dp),
                 text = rating,
                 style = MaterialTheme.typography.bodyMedium,
@@ -1580,11 +1809,58 @@ fun MovieTVCertifications(
             )
 
             Text(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(8.dp),
                 text = ratingMeaning,
             )
     }
 }
+}
+@Composable
+fun VideosPager(
+    modifier: Modifier = Modifier,
+    trailers: List<Trailers?>?,
+) {
+    val pagerState = rememberPagerState {
+        trailers?.size ?: 0
+    }
 
+    Box(modifier = modifier.fillMaxSize()) {
+
+        Column {
+            HorizontalPager(modifier = Modifier.weight(1f, true), state = pagerState) {
+                YouTubeSinglePlayer(
+                    videoId = trailers?.get(it)?.key ?: ""
+                )
+            }
+           Box(
+               modifier = Modifier.weight(0.1f, true)
+               .fillMaxWidth()
+           ) {
+               Row(
+                   Modifier
+                       .wrapContentHeight()
+                       .fillMaxSize()
+                       .align(Alignment.BottomCenter)
+                       .padding(bottom = 8.dp),
+                   horizontalArrangement = Arrangement.Center,
+                   verticalAlignment = Alignment.CenterVertically
+               ) {
+                   repeat(pagerState.pageCount) { iteration ->
+                       val color = if (pagerState.currentPage == iteration) Color.DarkGray else Color.Transparent
+                       Box(
+                           modifier = Modifier
+                               .padding(2.dp)
+                               .clip(CircleShape)
+                               .border(Dp.Hairline, Color.LightGray)
+                               .background(color)
+                               .size(6.dp)
+                       )
+                   }
+               }
+           }
+        }
+
+    }
 }

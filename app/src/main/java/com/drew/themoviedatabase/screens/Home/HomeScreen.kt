@@ -33,7 +33,10 @@ import com.drew.themoviedatabase.ComposeUtils.PullToRefresh
 import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.composeUI.MovieList
+import com.drew.themoviedatabase.composeUI.PopularPeopleList
 import com.drew.themoviedatabase.composeUI.TVShowList
+import com.drew.themoviedatabase.screens.Cast.CastViewModel
+import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -46,8 +49,10 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     moviesViewModel: MoviesViewModel = hiltViewModel(),
     tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
+    castViewModel: CastViewModel = hiltViewModel(),
     navigateToMovieDetails: (Int) -> Unit,
-    navigateToTVShowDetails: (Int) -> Unit
+    navigateToTVShowDetails: (Int) -> Unit,
+    navigateToCastDetailsScreen: (Int) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -57,16 +62,7 @@ fun HomeScreen(
     var isLoading by rememberSaveable { mutableStateOf(true) }
     val isRefreshing by moviesViewModel.isRefreshing.observeAsState(false)
 
-    var popularMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
-    var topRatedMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
-    var nowPlayingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
-    var upcomingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
-    var trendingMovies by remember { mutableStateOf<List<MovieDetailsReleaseData?>?>(null) }
 
-    var popularTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
-    var topRatedTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
-    var onTheAirTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
-    var airingTodayTVShows by remember { mutableStateOf<List<TVShowDetails?>?>(null) }
     val moviesPopular  = moviesViewModel.moviesPopular.collectAsLazyPagingItems()
     val moviesTopRated = moviesViewModel.moviesTopRated.collectAsLazyPagingItems()
     val moviesNowPlaying = moviesViewModel.moviesNowPlaying.collectAsLazyPagingItems()
@@ -78,39 +74,41 @@ fun HomeScreen(
     val tvShowsAiringTodayTVShows = tvShowsViewModel.tvShowsAiringToday.collectAsLazyPagingItems()
     val tvShowsOnTheAirTVShows = tvShowsViewModel.tvShowsOnTheAir.collectAsLazyPagingItems()
 
+    val popularPeople = castViewModel.popularPeople.collectAsLazyPagingItems()
 
 
-    // Observing movie lists
-    moviesViewModel.popularMovies.observe(lifecycleOwner) {
-        popularMovies = it?.sortedByDescending { it?.popularity }
-    }
-    moviesViewModel.topRatedMovies.observe(lifecycleOwner){
-        topRatedMovies = it
-    }
-    moviesViewModel.nowPlayingMovies.observe(lifecycleOwner) {
-        nowPlayingMovies = it
-    }
-    moviesViewModel.upcomingMovies.observe(lifecycleOwner) {
-        upcomingMovies = it?.filter { it?.status != "Released" }
-    }
-
-    moviesViewModel.trendingMovies.observe(lifecycleOwner) {
-        trendingMovies = it
-    }
-
-    // Observing TV show lists
-    tvShowsViewModel.popularTVShows.observe(lifecycleOwner) {
-        popularTVShows = it
-    }
-    tvShowsViewModel.topRatedTVShows.observe(lifecycleOwner){
-        topRatedTVShows = it
-    }
-    tvShowsViewModel.onTheAirTVShows.observe(lifecycleOwner) {
-        onTheAirTVShows = it
-    }
-    tvShowsViewModel.airingTodayTVShows.observe(lifecycleOwner) {
-        airingTodayTVShows = it
-    }
+//
+//    // Observing movie lists
+//    moviesViewModel.popularMovies.observe(lifecycleOwner) {
+//        popularMovies = it?.sortedByDescending { it?.popularity }
+//    }
+//    moviesViewModel.topRatedMovies.observe(lifecycleOwner){
+//        topRatedMovies = it
+//    }
+//    moviesViewModel.nowPlayingMovies.observe(lifecycleOwner) {
+//        nowPlayingMovies = it
+//    }
+//    moviesViewModel.upcomingMovies.observe(lifecycleOwner) {
+//        upcomingMovies = it?.filter { it?.status != "Released" }
+//    }
+//
+//    moviesViewModel.trendingMovies.observe(lifecycleOwner) {
+//        trendingMovies = it
+//    }
+//
+//    // Observing TV show lists
+//    tvShowsViewModel.popularTVShows.observe(lifecycleOwner) {
+//        popularTVShows = it
+//    }
+//    tvShowsViewModel.topRatedTVShows.observe(lifecycleOwner){
+//        topRatedTVShows = it
+//    }
+//    tvShowsViewModel.onTheAirTVShows.observe(lifecycleOwner) {
+//        onTheAirTVShows = it
+//    }
+//    tvShowsViewModel.airingTodayTVShows.observe(lifecycleOwner) {
+//        airingTodayTVShows = it
+//    }
 
 //        if (popularMovies?.isNotEmpty() == true
 //            && topRatedMovies?.isNotEmpty() == true
@@ -129,7 +127,8 @@ fun HomeScreen(
         && tvShowsPopular.loadState.refresh is LoadState.NotLoading
         && tvShowsTopRated.loadState.refresh is LoadState.NotLoading
         && tvShowsAiringTodayTVShows.loadState.refresh is LoadState.NotLoading
-        && tvShowsOnTheAirTVShows.loadState.refresh is LoadState.NotLoading) {
+        && tvShowsOnTheAirTVShows.loadState.refresh is LoadState.NotLoading
+        && popularPeople.loadState.refresh is LoadState.NotLoading) {
         isLoading = false
     }
 
@@ -159,6 +158,7 @@ fun HomeScreen(
                             moviesTopRated.refresh()
                             moviesNowPlaying.refresh()
                             moviesUpcoming.refresh()
+                            popularPeople.refresh()
                             tvShowsPopular.refresh()
                             tvShowsTopRated.refresh()
                             tvShowsAiringTodayTVShows.refresh()
@@ -187,17 +187,18 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
 
-
-                        if (moviesUpcoming.loadState.refresh is LoadState.NotLoading) {
-                            // Upcoming Movies
+                        if (moviesTrending.loadState.refresh is LoadState.NotLoading) {
+                            // Trending Movies
                             item {
+
                                 MovieList(
-                                    movies = moviesUpcoming,
-                                    categoryTitle = "Upcoming Movies",
-                                    color = Color.Red,
+                                    movies = moviesTrending,
+                                    categoryTitle = "Trending Movies",
+                                    color = Color.Green,
                                     onItemClick = navigateToMovieDetails
                                 )
-                                }
+
+                            }
                         }
 
                         if (tvShowsPopular.loadState.refresh is LoadState.NotLoading) {
@@ -211,18 +212,26 @@ fun HomeScreen(
                             }
                         }
 
-
-                        if (moviesTrending.loadState.refresh is LoadState.NotLoading) {
-                            // Trending Movies
+                        if (popularPeople.loadState.refresh is LoadState.NotLoading) {
                             item {
+                                PopularPeopleList(
+                                    peopleList = popularPeople,
+                                    categoryTitle = "Popular People",
+                                    color = DarkOrange,
+                                    onItemClick = navigateToCastDetailsScreen
+                                )
+                            }
+                        }
 
+                        if (moviesUpcoming.loadState.refresh is LoadState.NotLoading) {
+                            // Upcoming Movies
+                            item {
                                 MovieList(
-                                    movies = moviesTrending,
-                                    categoryTitle = "Trending Movies",
-                                    color = Color.Green,
+                                    movies = moviesUpcoming,
+                                    categoryTitle = "Upcoming Movies",
+                                    color = Color.Red,
                                     onItemClick = navigateToMovieDetails
                                 )
-
                             }
                         }
 

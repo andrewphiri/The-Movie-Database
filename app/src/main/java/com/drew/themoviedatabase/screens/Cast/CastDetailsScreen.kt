@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,8 +62,7 @@ fun CastDetailsScreen(
     castViewModel: CastViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var personDetails by remember { mutableStateOf<PersonDetails?>(null) }
+    val personDetails by castViewModel.personDetails.observeAsState()
     var isLoading by remember { mutableStateOf(true) }
     var isBiographyShowing by remember { mutableStateOf(false) }
     val photos = castViewModel.getPersonImages(personId).collectAsLazyPagingItems()
@@ -74,9 +74,6 @@ fun CastDetailsScreen(
         }
     }
 
-    castViewModel.personDetails.observe(lifecycleOwner) {
-        personDetails = it
-    }
 
 
     Scaffold(
@@ -154,7 +151,7 @@ fun CastDetailItem(
     onDismiss: () -> Unit
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -210,19 +207,24 @@ fun CastDetailItem(
                 ) {
 
                     if (personDetails?.birthday != null) {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            text = "Born",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Born",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
 
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            text =  personDetails.birthday,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.LightGray
-                        )
+                            Text(
+                                text =  personDetails.birthday,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.LightGray
+                            )
+                        }
+
                     }
+
                     if (personDetails?.placeOfBirth != null) {
                         Text(
                             modifier = Modifier.fillMaxWidth(),
@@ -231,6 +233,26 @@ fun CastDetailItem(
                             color = Color.LightGray
                         )
                     }
+
+                    if (personDetails?.deathDay != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Died",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Text(
+                                text =  personDetails.deathDay,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.LightGray
+                            )
+                        }
+                    }
+
+
                 }
             }
         }

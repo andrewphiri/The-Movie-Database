@@ -103,7 +103,7 @@ fun MovieDetailsScreen(
     var isTrailersEmpty by remember { mutableStateOf(true) }
 
     val movieDetails by moviesViewModel.movieDetailsWithCastAndVideos.observeAsState()
-    var similarMovies = moviesViewModel.getSimilarMovies(movieId).collectAsLazyPagingItems()
+    val similarMovies = moviesViewModel.getSimilarMovies(movieId).collectAsLazyPagingItems()
     val reviews = moviesViewModel.getReviews(movieId).collectAsLazyPagingItems()
     val photos = moviesViewModel.getPhotos(movieId).collectAsLazyPagingItems()
     val certifications by moviesViewModel.certifications.observeAsState()
@@ -213,7 +213,7 @@ fun MovieDetailsScreen(
                     )
                 }
 
-                    if (similarMovies != null) {
+                    if (similarMovies.itemCount > 0) {
                         item {
                             MovieList(
                                 movies = similarMovies,
@@ -224,7 +224,7 @@ fun MovieDetailsScreen(
                         }
                     }
 
-                    if (reviews != null) {
+                    if (reviews.itemCount > 0) {
                         item {
                             ReviewList(
                                 reviews = reviews,
@@ -234,7 +234,7 @@ fun MovieDetailsScreen(
                         }
                     }
 
-                    if (photos != null ) {
+                    if (photos.itemCount > 0) {
                         item {
                             PhotosList(
                                 photos = photos,
@@ -325,19 +325,22 @@ fun MovieDetailsCard(
                 )
             }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Text(
+        if (!isTrailersEmpty) {
+            Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp)
-                    .clickable { navigateToTrailers() },
-                text = "See more videos",
-                color = Color.Cyan,
-            )
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .clickable { navigateToTrailers() },
+                    text = "See more videos",
+                    color = Color.Cyan,
+                )
+            }
         }
+
 
 
         Row(

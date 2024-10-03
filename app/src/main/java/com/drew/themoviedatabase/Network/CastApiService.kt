@@ -26,4 +26,11 @@ interface CastApiService {
         @Query("api_key") apiKey: String,
         @Query("language") language: String): Call<PersonPhotosResponse?>
 
+    @GET("person/popular")
+    fun getPopularPeople(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String,
+        @Query("page") page: Int
+    ) : Call<PopularPersonResponse?>
+
 }

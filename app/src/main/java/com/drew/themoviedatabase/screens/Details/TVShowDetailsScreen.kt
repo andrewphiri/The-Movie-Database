@@ -103,7 +103,7 @@ fun TVDetailsScreen(
     var isTrailersEmpty by remember { mutableStateOf(true) }
 
     val tvDetails by tvShowsViewModel.tvShowsWithCastAndVideos.observeAsState()
-    var similarTVShows = tvShowsViewModel.getSimilarTVShows(seriesId).collectAsLazyPagingItems()
+    val similarTVShows = tvShowsViewModel.getSimilarTVShows(seriesId).collectAsLazyPagingItems()
     val reviews  = tvShowsViewModel.getReviews(seriesId).collectAsLazyPagingItems()
     val photos = tvShowsViewModel.getPhotos(seriesId).collectAsLazyPagingItems()
     val certifications by tvShowsViewModel.certifications.observeAsState()
@@ -184,7 +184,10 @@ fun TVDetailsScreen(
                     }
                 }
 
-                if (tvDetails?.watchProviders?.results?.isNotEmpty() == true) {
+                if (tvDetails?.watchProviders?.results?.get(getWatchRegion())?.buy?.isNotEmpty() == true ||
+                    tvDetails?.watchProviders?.results?.get(getWatchRegion())?.rent?.isNotEmpty() == true ||
+                    tvDetails?.watchProviders?.results?.get(getWatchRegion())?.flatrate?.isNotEmpty() == true ||
+                    tvDetails?.watchProviders?.results?.get(getWatchRegion())?.free?.isNotEmpty() == true) {
                     item {
                         TVWatchProviderList(
                             tvShow = tvDetails
@@ -215,7 +218,7 @@ fun TVDetailsScreen(
                 }
 
 
-                if (similarTVShows != null) {
+                if (similarTVShows.itemCount > 0) {
                     item {
                         TVShowList(
                             tvShows = similarTVShows,
@@ -225,7 +228,7 @@ fun TVDetailsScreen(
                     }
                 }
 
-                if (reviews != null) {
+                if (reviews.itemCount > 0) {
                     item {
                         ReviewList(
                             reviews = reviews,
@@ -235,7 +238,7 @@ fun TVDetailsScreen(
                     }
                 }
 
-                if (photos != null) {
+                if (photos.itemCount > 0) {
                     item {
                         PhotosList(
                             photos = photos,
@@ -331,18 +334,20 @@ fun TVDetailsCard(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Text(
+        if (!isTrailersEmpty) {
+            Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp)
-                    .clickable { navigateToTrailers() },
-                text = "See more videos",
-                color = Color.Cyan,
-            )
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .clickable { navigateToTrailers() },
+                    text = "See more videos",
+                    color = Color.Cyan,
+                )
+            }
         }
 
         Row(
@@ -471,6 +476,7 @@ fun TVWatchProviderList(
     val watchProvidersBuy = tvShow?.watchProviders?.results?.get(watchRegion)?.buy?.toList()
     val watchProvidersRent = tvShow?.watchProviders?.results?.get(watchRegion)?.rent?.toList()
     val watchProvidersFlatrate = tvShow?.watchProviders?.results?.get(watchRegion)?.flatrate?.toList()
+    val watchProvidersFree = tvShow?.watchProviders?.results?.get(watchRegion)?.free?.toList()
     val allProviders: SnapshotStateList<Provider>? = remember { mutableStateListOf() }
     if (watchProvidersRent != null) {
         allProviders?.addAll(watchProvidersRent)
@@ -480,6 +486,9 @@ fun TVWatchProviderList(
     }
     if (watchProvidersFlatrate != null) {
         allProviders?.addAll(watchProvidersFlatrate)
+    }
+    if (watchProvidersFree != null) {
+        allProviders?.addAll(watchProvidersFree)
     }
     if (allProviders != null) {
         val link = tvShow?.watchProviders?.results?.get(watchRegion)?.link ?: ""

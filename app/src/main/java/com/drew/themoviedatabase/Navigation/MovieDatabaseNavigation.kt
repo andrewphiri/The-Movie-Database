@@ -68,6 +68,13 @@ fun NavGraphBuilder.homeNavGraph(
                             seriesId = seriesId,
                         )
                     )
+                },
+                navigateToCastDetailsScreen = { personId ->
+                    navController.navigate(
+                        PersonDetailsScreen(
+                            personId = personId
+                        )
+                    )
                 }
             )
         }

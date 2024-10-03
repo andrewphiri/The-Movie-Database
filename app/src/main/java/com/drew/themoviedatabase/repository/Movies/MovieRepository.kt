@@ -392,7 +392,7 @@ class MovieRepository @Inject constructor(
        return try {
             fetchMovieDetails(
                 pages = pages,
-                apiCall = { page -> movieApiService.getTrendingMovies(apiKey = API_KEY, language = defaultLocale())?.execute() }
+                apiCall = { page -> movieApiService.getTrendingMovies(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() }
             )
         } catch (e : Exception) {
             e.printStackTrace()

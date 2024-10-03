@@ -28,6 +28,8 @@ class CastViewModel @Inject constructor(
     private val _combinedCredits = MutableLiveData<CombinedCreditsResponse?>()
     val combinedCredits: LiveData<CombinedCreditsResponse?> get() = _combinedCredits
 
+    val popularPeople = repository.getPopularPeoplePager().cachedIn(viewModelScope)
+
     fun getPersonDetails(personId: Int) {
         repository.getPersonDetails(personId) { response ->
             if (response.isSuccessful) {

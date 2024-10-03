@@ -9,6 +9,7 @@ import com.drew.themoviedatabase.Network.CombinedCreditsResponse
 import com.drew.themoviedatabase.Network.PersonPhotosResponse
 import com.drew.themoviedatabase.POJO.PersonDetails
 import com.drew.themoviedatabase.POJO.Photos
+import com.drew.themoviedatabase.POJO.PopularPerson
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +31,13 @@ class PersonRepository @Inject constructor(
         return Pager(
             config = PagingConfig(pageSize = 10),
             pagingSourceFactory = { CastPhotosPagingSource(this, personId) }
+        ).flow
+    }
+
+    fun getPopularPeoplePager() : Flow<PagingData<PopularPerson>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { PopularPeoplePagingSource(this) }
         ).flow
     }
 
@@ -90,6 +98,33 @@ class PersonRepository @Inject constructor(
                         )?.execute()
                         if (response?.isSuccessful == true) {
                             response.body()?.getPersonPhotos()
+                        } else {
+                            emptyList()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        emptyList()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    suspend fun getPopularPeople(page : Int) : List<PopularPerson?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    try {
+                        val response =   castApiService.getPopularPeople(
+                            apiKey = API_KEY,
+                            language = defaultLocale(),
+                            page = page
+                        )?.execute()
+                        if (response?.isSuccessful == true) {
+                            response.body()?.results
                         } else {
                             emptyList()
                         }

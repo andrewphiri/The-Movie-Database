@@ -92,9 +92,10 @@ interface MovieApiService {
 
     @GET("trending/movie/{time_window}")
     fun getTrendingMovies(
-        @Path ("time_window") timeWindow: String = "day",
+        @Path ("time_window") timeWindow: String = "week",
         @Query("language") language: String,
-        @Query("api_key") apiKey: String, ): Call <MovieResponse?>?
+        @Query("api_key") apiKey: String,
+        @Query ("page") page: Int = 1): Call <MovieResponse?>?
 
 
     @GET("movie/{id}")

@@ -79,7 +79,7 @@ fun SearchScreen(
         .getMultiSearch(searchQuery).collectAsLazyPagingItems()
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center) {
             Column(
                 modifier = Modifier
