@@ -115,16 +115,16 @@ fun ProfileScreen(
     LaunchedEffect(key1 = sessionID) {
         try {
             val myProfile = async { loginViewModel.getAccountID(sessionID ?: "") }.await()
-                if (myProfile == null && user != null) {
+            if (myProfile == null && user != null) {
 
-                    Log.d("PROFILE_SCREEN", "My Profile: $myProfile")
-                    if (myProfile != null) {
+                Log.d("PROFILE_SCREEN", "My Profile: $myProfile")
+                if (myProfile != null) {
 
-                    }
-                    user?.let { userViewModel.delete(it) }
-                    sessionID = null
-                    accountID = 21411766
                 }
+                user?.let { userViewModel.delete(it) }
+                sessionID = null
+                accountID = 21411766
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -243,7 +243,8 @@ fun ProfileScreen(
                                 isLoading = true
 
                                 val logout = loginViewModel.deleteSession(sessionId = sessionID ?: "")
-                                if (logout?.success == true) {
+                                Log.d("PROFILE_SCREEN", "Logout: $logout")
+                                if (logout?.isSuccessful == true) {
                                     user?.let { userViewModel.delete(it) }
                                     sessionID = null
                                     accountID = 21411766

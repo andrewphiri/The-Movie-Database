@@ -11,6 +11,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import retrofit2.Response
 import javax.inject.Inject
 
 class LoginRepository @Inject constructor(
@@ -92,7 +93,7 @@ class LoginRepository @Inject constructor(
         }
     }
 
-    suspend fun deleteSessionID(sessionId: String) : DeleteSession? {
+    suspend fun deleteSessionID(sessionId: String) : Response<DeleteSession>? {
         val jsonBody = JsonObject().apply {
             addProperty("session_id", sessionId)
         }
@@ -103,7 +104,7 @@ class LoginRepository @Inject constructor(
                         val response = loginService.deleteSession(apiKey = API_KEY, jsonBody = jsonBody )?.execute()
 
                         if (response?.isSuccessful == true) {
-                            response.body()
+                            response
                         } else {
                             null
                         }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.Response
 import javax.inject.Inject
 
 @HiltViewModel
@@ -72,7 +73,7 @@ class LoginViewModel @Inject constructor(
         return loginRepository.requestToken()?.request_token
     }
 
-    suspend fun deleteSession(sessionId: String) : DeleteSession? {
+    suspend fun deleteSession(sessionId: String) : Response<DeleteSession>? {
         return loginRepository.deleteSessionID(sessionId)
     }
 
