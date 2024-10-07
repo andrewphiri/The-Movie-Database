@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.drew.themoviedatabase.POJO.UserDetails
 import com.drew.themoviedatabase.repository.room.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -16,13 +17,9 @@ class UserViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
-    val getUser: StateFlow<UserDetails?> =
+    val getUser: Flow<UserDetails?> =
         userRepository.getUser()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = null
-            )
+
 
     fun insert(userDetails: UserDetails) {
         viewModelScope.launch {

@@ -75,7 +75,7 @@ fun ProfileScreen(
     navigateToTVShowDetailsScreen: (Int) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val user by userViewModel.getUser.collectAsState()
+    val user by userViewModel.getUser.collectAsState(initial = null)
     val token by loginViewModel.requestToken.collectAsState()
     val approval by loginViewModel.approved.collectAsState()
     var sessionID by rememberSaveable { mutableStateOf<String?>(null) }
@@ -239,17 +239,21 @@ fun ProfileScreen(
                         },
                         onConfirm = {
                             coroutineScope.launch {
-                                showDialog = false
-                                isLoading = true
+                                try {
+                                    showDialog = false
+                                    isLoading = true
 
-                                val logout = loginViewModel.deleteSession(sessionId = sessionID ?: "")
-                                Log.d("PROFILE_SCREEN", "Logout: $logout")
-                                if (logout?.isSuccessful == true) {
+                                    val logout = loginViewModel.deleteSession(sessionId = sessionID ?: "")
+                                    delay(2000)
+                                    Log.d("PROFILE_SCREEN", "Logout: $logout")
+
                                     user?.let { userViewModel.delete(it) }
+                                    Log.d("USERDETAILS", "$user")
                                     sessionID = null
+                                    Log.d("SESSION", "$sessionID")
                                     accountID = 21411766
-                                    loadingMessage = "Requesting authentication..."
-                                    loginViewModel.setApproved(false)
+                                    loadingMessage = "Signing out..."
+
                                     refreshData(
                                         favoriteMovies = favoriteMovies,
                                         favoriteTVShows = favoriteTVShows,
@@ -258,9 +262,12 @@ fun ProfileScreen(
                                         watchlistMovies = watchlistMovies,
                                         watchlistTVShows = watchlistTVShows,
                                     )
+                                    isLoading = false
+                                    loadingMessage = "Requesting authentication..."
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
-                                delay(2000)
-                                isLoading = false
+
                             }
 
                         },

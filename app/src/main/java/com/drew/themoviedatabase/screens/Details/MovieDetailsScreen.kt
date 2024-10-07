@@ -106,7 +106,7 @@ fun MovieDetailsScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    val user by userViewModel.getUser.collectAsState()
+    val user by userViewModel.getUser.collectAsState(initial = null)
 
     var isLoading by remember { mutableStateOf(true) }
     var isTrailersEmpty by remember { mutableStateOf(true) }

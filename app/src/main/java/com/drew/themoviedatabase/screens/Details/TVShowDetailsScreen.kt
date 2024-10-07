@@ -115,7 +115,7 @@ fun TVDetailsScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val user by userViewModel.getUser.collectAsState()
+    val user by userViewModel.getUser.collectAsState(initial = null)
 //    val favoriteTvShows = moviesTVsViewModel.getMyFavoriteTVShows(
 //        user?.id ?: 0,
 //        user?.sessionId ?: ""
