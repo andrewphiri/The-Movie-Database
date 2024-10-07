@@ -23,12 +23,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -45,8 +47,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.os.ConfigurationCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.filter
+import androidx.paging.map
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Network.MovieDetailsResponse
@@ -63,6 +70,7 @@ import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.composeUI.CastList
 import com.drew.themoviedatabase.composeUI.ExpandableText
 import com.drew.themoviedatabase.composeUI.GenreList
+import com.drew.themoviedatabase.composeUI.LoadingSpinner
 import com.drew.themoviedatabase.composeUI.MovieTVCertifications
 import com.drew.themoviedatabase.composeUI.OverviewText
 import com.drew.themoviedatabase.composeUI.PhotosList
@@ -73,8 +81,14 @@ import com.drew.themoviedatabase.composeUI.TVShowList
 import com.drew.themoviedatabase.composeUI.VideosList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
 import com.drew.themoviedatabase.screens.Home.TVShowsViewModel
+import com.drew.themoviedatabase.screens.Profile.MyMoviesTVsViewModel
+import com.drew.themoviedatabase.screens.Profile.UserViewModel
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -94,13 +108,31 @@ fun TVDetailsScreen(
     tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
     navigateToReviews: (Int) -> Unit,
-    navigateToTrailers: (Int) -> Unit
+    navigateToTrailers: (Int) -> Unit,
+    userViewModel: UserViewModel = hiltViewModel(),
+    moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel()
 ) {
 
     val coroutineScope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val user by userViewModel.getUser.collectAsState()
+//    val favoriteTvShows = moviesTVsViewModel.getMyFavoriteTVShows(
+//        user?.id ?: 0,
+//        user?.sessionId ?: ""
+//    ).map { data ->
+//        data.filter { it.id == seriesId }
+//    }.cachedIn(moviesTVsViewModel.viewModelScope)
+//        .asLiveData()
+//
+//    favoriteTvShows.observe(lifecycleOwner) {
+//        Log.d("FavoriteTVShows", "FavoriteTVShows: $it")
+//        it.
+//    }
 
-    var isLoading by remember { mutableStateOf(true) }
-    var isTrailersEmpty by remember { mutableStateOf(true) }
+    var isLoading by rememberSaveable { mutableStateOf(true) }
+    var isTrailersEmpty by rememberSaveable { mutableStateOf(true) }
+    var isFavorite by rememberSaveable { mutableStateOf(false) }
+    var isAddedToWatchlist by rememberSaveable { mutableStateOf(false) }
 
     val tvDetails by tvShowsViewModel.tvShowsWithCastAndVideos.observeAsState()
     val similarTVShows = tvShowsViewModel.getSimilarTVShows(seriesId).collectAsLazyPagingItems()
@@ -142,7 +174,8 @@ fun TVDetailsScreen(
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize(),
         topBar = {
             MovieTopAppBar(
                 canNavigateBack = canNavigateBack,
@@ -151,107 +184,143 @@ fun TVDetailsScreen(
             )
         }
     ) { innerPadding ->
-
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(
+        Box(modifier = Modifier
+            .padding(innerPadding).fillMaxSize()) {
+            if (isLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center))
+            } else {
+                LazyColumn(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(50.dp) )
-            }
-
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item {
-                    TVDetailsCard(
-                        tvShow = tvDetails ,
-                        trailers = tvDetails?.videos?.getResults(),
-                        isTrailersEmpty = isTrailersEmpty,
-                        navigateToTrailers = { navigateToTrailers(seriesId) }
-                    )
-                }
-
-                if (tvDetails?.genres?.isNotEmpty() == true) {
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     item {
-                        GenreList(
-                            genres = tvDetails?.genres
+                        TVDetailsCard(
+                            tvShow = tvDetails,
+                            trailers = tvDetails?.videos?.getResults(),
+                            isTrailersEmpty = isTrailersEmpty,
+                            navigateToTrailers = { navigateToTrailers(seriesId) }
                         )
                     }
-                }
 
-                if (tvDetails?.watchProviders?.results?.get(getWatchRegion())?.buy?.isNotEmpty() == true ||
-                    tvDetails?.watchProviders?.results?.get(getWatchRegion())?.rent?.isNotEmpty() == true ||
-                    tvDetails?.watchProviders?.results?.get(getWatchRegion())?.flatrate?.isNotEmpty() == true ||
-                    tvDetails?.watchProviders?.results?.get(getWatchRegion())?.free?.isNotEmpty() == true) {
+                    if (tvDetails?.genres?.isNotEmpty() == true) {
+                        item {
+                            GenreList(
+                                genres = tvDetails?.genres
+                            )
+                        }
+                    }
+
+                    if (tvDetails?.watchProviders?.results?.get(getWatchRegion())?.buy?.isNotEmpty() == true ||
+                        tvDetails?.watchProviders?.results?.get(getWatchRegion())?.rent?.isNotEmpty() == true ||
+                        tvDetails?.watchProviders?.results?.get(getWatchRegion())?.flatrate?.isNotEmpty() == true ||
+                        tvDetails?.watchProviders?.results?.get(getWatchRegion())?.free?.isNotEmpty() == true
+                    ) {
+                        item {
+                            TVWatchProviderList(
+                                tvShow = tvDetails
+                            )
+                        }
+                    }
                     item {
-                        TVWatchProviderList(
-                            tvShow = tvDetails
+                        RatingsAndVotes(
+                            voteAverage = tvDetails?.voteAverage,
+                            voteCount = tvDetails?.voteCount,
+                            isFavorite = isFavorite ,
+                            isAddedToWatchlist = isAddedToWatchlist ,
+                            onAddToFavorites = {
+                                //isFavorite = !isFavorite
+                                if(user != null) {
+                                    coroutineScope.launch {
+                                       val addedToListResponse = moviesTVsViewModel.addToFavoriteOrWatchlist(
+                                            mediaType = "tv",
+                                            mediaID = seriesId,
+                                            listType = "favorite",
+                                            accountId = user?.id ?: 0,
+                                            sessionId = user?.sessionId,
+                                            addToList = isFavorite
+                                        )
+                                        if (addedToListResponse?.success == true) {
+                                            isFavorite = !isFavorite
+                                        }
+                                    }
+                                }
+                            },
+                            onAddToWatchlist = {
+                                //isAddedToWatchlist = !isAddedToWatchlist
+                                if(user != null) {
+                                    coroutineScope.launch {
+                                       val addedToListResponse = moviesTVsViewModel.addToFavoriteOrWatchlist(
+                                            mediaType = "tv",
+                                            mediaID = seriesId,
+                                            listType = "watchlist",
+                                            accountId = user?.id ?: 0,
+                                            sessionId = user?.sessionId,
+                                            addToList = isAddedToWatchlist
+                                        )
+                                        if (addedToListResponse?.success == true) {
+                                            isAddedToWatchlist = !isAddedToWatchlist
+                                        }
+                                    }
+                                }
+                            }
                         )
                     }
-                }
-                item {
-                    RatingsAndVotes(
-                        voteAverage = tvDetails?.voteAverage,
-                        voteCount = tvDetails?.voteCount
-                    )
-                }
 
-                if (tvDetails?.credits?.getCast()?.isNotEmpty() == true) {
+                    if (tvDetails?.credits?.getCast()?.isNotEmpty() == true) {
+                        item {
+                            CastList(
+                                castMembers = tvDetails?.credits?.getCast(),
+                                crew = tvDetails?.credits?.getCrew(),
+                                navigateToCastDetailsScreen = navigateToCastDetails
+                            )
+                        }
+                    }
+
                     item {
-                        CastList(
-                            castMembers = tvDetails?.credits?.getCast(),
-                            crew = tvDetails?.credits?.getCrew(),
-                            navigateToCastDetailsScreen = navigateToCastDetails
+                        OtherTVDetailsCard(
+                            tvDetails = tvDetails
                         )
                     }
-                }
-
-                item {
-                    OtherTVDetailsCard(
-                        tvDetails = tvDetails
-                    )
-                }
 
 
-                if (similarTVShows.itemCount > 0) {
-                    item {
-                        TVShowList(
-                            tvShows = similarTVShows,
-                            onItemClick = navigateToTVShowDetails,
-                            categoryTitle = "More like this",
-                            color = Color.Red )
+                    if (similarTVShows.itemCount > 0) {
+                        item {
+                            TVShowList(
+                                tvShows = similarTVShows,
+                                onItemClick = navigateToTVShowDetails,
+                                categoryTitle = "More like this",
+                                color = Color.Red
+                            )
+                        }
                     }
-                }
 
-                if (reviews.itemCount > 0) {
-                    item {
-                        ReviewList(
-                            reviews = reviews,
-                            categoryTitle = "Reviews",
-                            onItemClick = { navigateToReviews(seriesId) }
-                        )
+                    if (reviews.itemCount > 0) {
+                        item {
+                            ReviewList(
+                                reviews = reviews,
+                                categoryTitle = "Reviews",
+                                onItemClick = { navigateToReviews(seriesId) }
+                            )
+                        }
                     }
-                }
 
-                if (photos.itemCount > 0) {
-                    item {
-                        PhotosList(
-                            photos = photos,
-                            categoryTitle = "Photos" )
+                    if (photos.itemCount > 0) {
+                        item {
+                            PhotosList(
+                                photos = photos,
+                                categoryTitle = "Photos"
+                            )
+                        }
                     }
-                }
 
-                if (certifications != null) {
-                    item {
-                        TVCertifications(
-                            certifications = certifications,
-                            tvShow = tvDetails
-                        )
+                    if (certifications != null) {
+                        item {
+                            TVCertifications(
+                                certifications = certifications,
+                                tvShow = tvDetails
+                            )
+                        }
                     }
                 }
             }

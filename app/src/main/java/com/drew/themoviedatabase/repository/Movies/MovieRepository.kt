@@ -43,71 +43,6 @@ class MovieRepository @Inject constructor(
     private  val movieApiService: MovieApiService,
 ) {
 
-    fun getPopularMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { PopularMoviesPagingSource(this) }
-        ).flow
-    }
-
-    fun getTopRatedMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { TopRatedMoviesPagingSource(this) }
-        ).flow
-    }
-
-    fun getUpcomingMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
-        return Pager(
-            config = PagingConfig(pageSize = 40, initialLoadSize = 40),
-            pagingSourceFactory = { UpcomingMoviesPagingSource(this) }
-        ).flow
-    }
-
-    fun getNowPlayingMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { NowPlayingMoviesPagingSource(this) }
-        ).flow
-    }
-
-    fun getTrendingMovies() : Flow<PagingData<MovieDetailsReleaseData>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { TrendingMoviesPagingSource(this) }
-        ).flow
-    }
-
-    fun getSimilarMovies(movieId: Int) : Flow<PagingData<MovieDetailsReleaseData>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { SimilarMoviesPagingSource(this, movieId) }
-        ).flow
-    }
-
-    fun getReviews(movieId: Int) : Flow<PagingData<Reviews>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { MoviesReviewsPagingSource(this, movieId) }
-        ).flow
-    }
-
-    fun fetchMultiSearch(query: String) : Flow<PagingData<MultiSearchResult>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { MultiSearchPagingSource(this, query) }
-        ).flow
-    }
-
-    fun getMovieImages(movieId: Int) : Flow<PagingData<Photos>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { MoviePhotosPagingSource(this, movieId) }
-        ).flow
-    }
-
-
-
     private fun fetchMovies(
         pages: Int,
         apiCall: suspend (Int) -> Response<MovieResponse?>?,
@@ -692,6 +627,21 @@ class MovieRepository @Inject constructor(
             coroutineScope {
                 withContext(Dispatchers.IO) {
                     val response = movieApiService.getMultiSearch(apiKey = API_KEY, language = defaultLocale(), query = searchQuery, page = page)?.execute()
+                    response?.body()?.results ?: emptyList()
+                }
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    suspend fun multiSearchTrendingMedia(page: Int) :  List<MultiSearchResult?>? {
+        return try {
+            coroutineScope {
+                withContext(Dispatchers.IO) {
+                    val response = movieApiService.getAllTrendingMedia(apiKey = API_KEY, language = defaultLocale(), page = page)?.execute()
                     response?.body()?.results ?: emptyList()
                 }
             }

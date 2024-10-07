@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.POJO.Reviews
+import com.drew.themoviedatabase.composeUI.LoadingSpinner
 import com.drew.themoviedatabase.composeUI.UserReviewList
 import com.drew.themoviedatabase.screens.Home.TVShowsViewModel
 import kotlinx.coroutines.launch
@@ -66,23 +67,21 @@ fun TVUserReviewsScreen(
             )
         }
     ) { innerPadding ->
+        Box(modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()) {
+            if (isLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center))
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(
+            } else {
+                Column(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(50.dp) )
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-            ) {
-                UserReviewList(
-                    reviews = reviews
-                )
+                        .fillMaxSize()
+                ) {
+                    UserReviewList(
+                        reviews = reviews
+                    )
+                }
             }
         }
 

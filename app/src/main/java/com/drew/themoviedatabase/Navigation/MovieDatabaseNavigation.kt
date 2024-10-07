@@ -1,12 +1,18 @@
 package com.drew.themoviedatabase.Navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.drew.themoviedatabase.screens.Cast.PersonDetailsScreen
 import com.drew.themoviedatabase.screens.Cast.CastDetailsScreen
@@ -15,6 +21,8 @@ import com.drew.themoviedatabase.screens.Details.DetailsTVScreen
 import com.drew.themoviedatabase.screens.Details.MovieDetailsScreen
 import com.drew.themoviedatabase.screens.Details.TVDetailsScreen
 import com.drew.themoviedatabase.screens.Home.HomeScreen
+import com.drew.themoviedatabase.screens.Profile.LoginViewModel
+import com.drew.themoviedatabase.screens.Profile.ProfileNavScreen
 import com.drew.themoviedatabase.screens.Profile.ProfileScreen
 import com.drew.themoviedatabase.screens.Reviews.MoviesReviewsScreen
 import com.drew.themoviedatabase.screens.Reviews.MovieUserReviewsScreen
@@ -31,6 +39,7 @@ import com.drew.themoviedatabase.screens.Videos.VideosScreen
 fun MovieNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController,
+    loginViewModel: LoginViewModel
 ) {
 
     NavHost(
@@ -42,7 +51,7 @@ fun MovieNavHost(
         homeNavGraph(navController)
         detailsNavGraph(navController)
         searchNavGraph(navController)
-        profileNavGraph(navController)
+        profileNavGraph(navController, loginViewModel)
         videoNavGraph(navController)
     }
 }
@@ -247,13 +256,37 @@ fun NavGraphBuilder.searchNavGraph(
 }
 
 fun  NavGraphBuilder.profileNavGraph(
-    navController: NavHostController
+    navController: NavHostController,
+    loginViewModel: LoginViewModel
 ) {
+    //?approved={approved}&request_token={request_token}
     navigation<ProfileNavGraph>(
-        startDestination = ProfileScreen,
+        startDestination = ProfileNavScreen,
     ) {
-        composable<ProfileScreen> {
-            ProfileScreen()
+        composable<ProfileNavScreen>(
+            deepLinks = listOf(navDeepLink<ProfileNavScreen> (basePath = "mdbapp://www.drew.mdb.com"))
+        ) { backStackEntry ->
+            val args = backStackEntry.toRoute<ProfileNavScreen>()
+
+
+            //Log.d("ProfileNavGraph", "Approved: $approved, Request Token: $requestToken")
+            ProfileScreen(
+                loginViewModel = loginViewModel,
+                navigateToMovieDetailsScreen = { movieId ->
+                    navController.navigate(
+                        DetailsMovieScreen(
+                            movieId = movieId,
+                        )
+                    )
+                },
+                navigateToTVShowDetailsScreen = { seriesId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = seriesId,
+                        )
+                    )
+                }
+            )
         }
     }
 }

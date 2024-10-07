@@ -4,13 +4,17 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.drew.themoviedatabase.Network.CombinedCreditsResponse
 import com.drew.themoviedatabase.Network.PersonPhotosResponse
 import com.drew.themoviedatabase.POJO.PersonDetails
 import com.drew.themoviedatabase.POJO.Photos
+import com.drew.themoviedatabase.repository.CastPhotosPagingSource
 import com.drew.themoviedatabase.repository.PersonRepository
+import com.drew.themoviedatabase.repository.PopularPeoplePagingSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -28,7 +32,10 @@ class CastViewModel @Inject constructor(
     private val _combinedCredits = MutableLiveData<CombinedCreditsResponse?>()
     val combinedCredits: LiveData<CombinedCreditsResponse?> get() = _combinedCredits
 
-    val popularPeople = repository.getPopularPeoplePager().cachedIn(viewModelScope)
+    val popularPeople = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { PopularPeoplePagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
 
     fun getPersonDetails(personId: Int) {
         repository.getPersonDetails(personId) { response ->
@@ -39,7 +46,10 @@ class CastViewModel @Inject constructor(
     }
 
     fun getPersonImages(personId: Int) : Flow<PagingData<Photos>> {
-        return (repository.getCastImagesPager(personId).cachedIn(viewModelScope))
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { CastPhotosPagingSource(repository, personId) }
+        ).flow.cachedIn(viewModelScope)
     }
 
     fun getCombinedCredits(personId: Int) {

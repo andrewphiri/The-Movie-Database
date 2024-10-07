@@ -26,21 +26,6 @@ import javax.inject.Inject
 class PersonRepository @Inject constructor(
     private val castApiService: CastApiService
 ) {
-
-    fun getCastImagesPager(personId: Int) : Flow<PagingData<Photos>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { CastPhotosPagingSource(this, personId) }
-        ).flow
-    }
-
-    fun getPopularPeoplePager() : Flow<PagingData<PopularPerson>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { PopularPeoplePagingSource(this) }
-        ).flow
-    }
-
     fun getPersonDetails(personId : Int, callback: (Response<PersonDetails?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {

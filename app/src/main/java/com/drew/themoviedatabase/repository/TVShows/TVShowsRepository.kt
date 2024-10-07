@@ -36,56 +36,6 @@ import javax.inject.Inject
 class TVShowsRepository@Inject constructor(
     val tvShowApiService: TVShowApiService) {
 
-    fun getTopRatedTVShows() : Flow<PagingData<TVShowDetails>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { TopShowsPagingSource(this) }
-        ).flow
-    }
-
-    fun getPopularTVShows() : Flow<PagingData<TVShowDetails>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { PopularShowsPagingSource(this) }
-        ).flow
-    }
-
-    fun getOnTheAirTVShows() : Flow<PagingData<TVShowDetails>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { OnTheAirShowsPagingSource(this) }
-        ).flow
-    }
-
-    fun getAiringTodayTVShows() : Flow<PagingData<TVShowDetails>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { AiringTodayPagingSource(this) }
-        ).flow
-    }
-
-    fun getSimilarTVShows(seriesId: Int) : Flow<PagingData<TVShowDetails>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { SimilarTVShowsPagingSource(this, seriesId) }
-        ).flow
-    }
-
-    fun getShowImages(seriesId: Int) : Flow<PagingData<Photos>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { TVShowPhotosPagingSource(this, seriesId) }
-        ).flow
-    }
-
-    fun getReviews(seriesId: Int) : Flow<PagingData<Reviews>> {
-        return Pager(
-            config = PagingConfig(pageSize = 10),
-            pagingSourceFactory = { TVReviewsPagingSource(this, seriesId) }
-        ).flow
-    }
-
-
     private fun fetchTVShows(
         pages: Int,
         apiCall: suspend (Int) -> Response<TVShowsResponse?>?,

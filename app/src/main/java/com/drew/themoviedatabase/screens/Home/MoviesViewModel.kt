@@ -19,8 +19,17 @@ import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
 import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.Trailers
+import com.drew.themoviedatabase.repository.Movies.MoviePhotosPagingSource
 import com.drew.themoviedatabase.repository.Movies.MovieRepository
+import com.drew.themoviedatabase.repository.Movies.MoviesReviewsPagingSource
+import com.drew.themoviedatabase.repository.Movies.NowPlayingMoviesPagingSource
+import com.drew.themoviedatabase.repository.Movies.PopularMoviesPagingSource
+import com.drew.themoviedatabase.repository.Movies.SimilarMoviesPagingSource
+import com.drew.themoviedatabase.repository.Movies.TopRatedMoviesPagingSource
+import com.drew.themoviedatabase.repository.Movies.TrendingMoviesPagingSource
+import com.drew.themoviedatabase.repository.Movies.UpcomingMoviesPagingSource
 import com.drew.themoviedatabase.repository.MultiSearchPagingSource
+import com.drew.themoviedatabase.repository.TrendingMediaPagingSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,11 +43,34 @@ class MoviesViewModel @Inject constructor(
     private val repository: MovieRepository,
     ) : ViewModel() {
 
-    val moviesPopular = repository.getPopularMovies().cachedIn(viewModelScope)
-    val moviesTopRated = repository.getTopRatedMovies().cachedIn(viewModelScope)
-    val moviesUpcoming = repository.getUpcomingMovies().cachedIn(viewModelScope)
-    val moviesNowPlaying = repository.getNowPlayingMovies().cachedIn(viewModelScope)
-    val moviesTrending = repository.getTrendingMovies().cachedIn(viewModelScope)
+    val moviesPopular = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { PopularMoviesPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+
+    val moviesTopRated = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { TopRatedMoviesPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+
+    val moviesUpcoming = Pager(
+        config = PagingConfig(pageSize = 40, initialLoadSize = 40),
+        pagingSourceFactory = { UpcomingMoviesPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+
+    val moviesNowPlaying = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { NowPlayingMoviesPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+
+    val moviesTrending = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { TrendingMoviesPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+    val trendingMedia = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { TrendingMediaPagingSource(repository, "") }
+    ).flow.cachedIn(viewModelScope)
 
     private val _upcomingMovies = MutableLiveData<List<MovieDetailsReleaseData?>?>()
     val upcomingMovies: LiveData<List<MovieDetailsReleaseData?>?> get()  = _upcomingMovies
@@ -94,15 +126,24 @@ class MoviesViewModel @Inject constructor(
 
 
     fun getMultiSearch(query: String) : Flow<PagingData<MultiSearchResult>> {
-        return repository.fetchMultiSearch(query).cachedIn(viewModelScope)
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { MultiSearchPagingSource(repository, query) }
+        ).flow.cachedIn(viewModelScope)
     }
 
     fun getSimilarMovies(movieId: Int) : Flow<PagingData<MovieDetailsReleaseData>> {
-        return repository.getSimilarMovies(movieId).cachedIn(viewModelScope)
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { SimilarMoviesPagingSource(repository, movieId) }
+        ).flow.cachedIn(viewModelScope)
     }
 
     fun getPhotos(movieId: Int) : Flow<PagingData<Photos>> {
-        return repository.getMovieImages(movieId).cachedIn(viewModelScope)
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { MoviePhotosPagingSource(repository, movieId) }
+        ).flow.cachedIn(viewModelScope)
     }
 
     fun setRefreshing(isRefreshing: Boolean) {
@@ -205,7 +246,10 @@ class MoviesViewModel @Inject constructor(
     }
 
     fun getReviews(movieId: Int) :  Flow<PagingData<Reviews>> {
-        return repository.getReviews(movieId).cachedIn(viewModelScope)
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { MoviesReviewsPagingSource(repository, movieId) }
+        ).flow.cachedIn(viewModelScope)
     }
 
 

@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
@@ -191,12 +192,14 @@ fun TVShowItemsSearch(
     modifier: Modifier = Modifier,
     onItemClick: (Int) -> Unit,
     tvShow: MultiSearchResult.TV?,
+    height: Dp = 350.dp,
+    width: Dp = 120.dp
 ) {
 
     ElevatedCard(
         modifier = modifier
-            .height(350.dp)
-            .width(120.dp),
+            .height(height)
+            .width(width),
         onClick = {
             if (tvShow != null) {
                 onItemClick(tvShow.id)
@@ -205,7 +208,7 @@ fun TVShowItemsSearch(
     ) {
         AsyncImage(
             modifier = Modifier
-                .weight(1f, true),
+                .fillMaxWidth(),
             model = NetworkClient().getPosterUrl(tvShow?.poster_path),
             contentDescription = "${tvShow?.name} poster",
             placeholder = painterResource(R.drawable.mdb_1)
@@ -214,8 +217,7 @@ fun TVShowItemsSearch(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp)
-                .weight(0.5f),
+                .padding(start = 8.dp, end = 8.dp),
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -265,11 +267,13 @@ fun CastCardSearchItem(
     modifier: Modifier = Modifier,
     navigateToCastDetailsScreen: (Int) -> Unit,
     person: MultiSearchResult.Person?,
+    height: Dp = 350.dp,
+    width: Dp = 120.dp
 ) {
     ElevatedCard(
         modifier = modifier
-            .width(120.dp)
-            .height(350.dp),
+            .width(width)
+            .height(height),
         onClick = {
             if (person != null) {
                 navigateToCastDetailsScreen(person.id)
@@ -277,8 +281,7 @@ fun CastCardSearchItem(
         }
     ) {
         AsyncImage(
-            modifier = Modifier
-                .weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             model = NetworkClient().getPosterUrl(person?.profile_path),
             contentDescription = "${person?.name} profile picture",
         )
@@ -286,8 +289,7 @@ fun CastCardSearchItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp)
-                .weight(0.5f),
+                .padding(start = 8.dp, end = 8.dp),
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -317,11 +319,13 @@ fun MovieItemSearch(
     modifier: Modifier = Modifier,
     onItemClick: (Int) -> Unit,
     movie: MultiSearchResult.Movie?,
+    height: Dp = 350.dp,
+    width: Dp = 120.dp
 ) {
     ElevatedCard(
         modifier = modifier
-            .height(350.dp)
-            .width(120.dp),
+            .height(height)
+            .width(width),
         onClick = {
             if (movie != null) {
                 onItemClick(movie.id)
@@ -330,8 +334,7 @@ fun MovieItemSearch(
     ) {
         AsyncImage(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+                .fillMaxWidth(),
             model = NetworkClient().getPosterUrl(movie?.poster_path),
             contentDescription = "${movie?.title} poster",
             placeholder = painterResource(R.drawable.mdb_1)
@@ -340,8 +343,7 @@ fun MovieItemSearch(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp)
-                .weight(0.5f),
+                .padding(start = 8.dp, end = 8.dp),
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

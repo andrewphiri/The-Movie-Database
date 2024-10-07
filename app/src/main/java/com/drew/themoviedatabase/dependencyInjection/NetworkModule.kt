@@ -2,8 +2,10 @@ package com.drew.themoviedatabase.dependencyInjection
 
 import com.drew.themoviedatabase.Network.BASE_URL
 import com.drew.themoviedatabase.Network.CastApiService
+import com.drew.themoviedatabase.Network.LoginApiService
 import com.drew.themoviedatabase.Network.MovieApiService
 import com.drew.themoviedatabase.Network.MultiSearchResult
+import com.drew.themoviedatabase.Network.MyAccountApiService
 import com.drew.themoviedatabase.Network.TVShowApiService
 import com.drew.themoviedatabase.Utilities.MultiSearchResultAdapter
 import com.google.gson.Gson
@@ -48,4 +50,13 @@ object NetworkModule {
         return retrofit.create(CastApiService::class.java)
     }
 
+    @Provides
+    fun provideLoginApiService(retrofit: Retrofit) : LoginApiService {
+        return retrofit.create(LoginApiService::class.java)
+    }
+
+    @Provides
+    fun provideMyAccountApiService(retrofit: Retrofit) : MyAccountApiService {
+        return retrofit.create(MyAccountApiService::class.java)
+    }
 }

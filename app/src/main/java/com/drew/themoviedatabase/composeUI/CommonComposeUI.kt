@@ -38,6 +38,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -1522,6 +1523,10 @@ fun RatingsAndVotes(
     modifier: Modifier = Modifier,
     voteAverage: Double? = 0.0,
     voteCount: Int? = 0,
+    onAddToWatchlist: () -> Unit,
+    onAddToFavorites: () -> Unit,
+    isFavorite: Boolean,
+    isAddedToWatchlist: Boolean
 ){
     ElevatedCard(
         modifier = modifier
@@ -1539,8 +1544,14 @@ fun RatingsAndVotes(
                     voteAverage = voteAverage,
                     voteCount = voteCount
                 )
-                FavoriteItem()
-                AddToWatchlistItem()
+                FavoriteItem(
+                    onAddToFavorites = onAddToFavorites,
+                    isFavorite = isFavorite
+                )
+                AddToWatchlistItem(
+                    onAddToWatchlist = onAddToWatchlist,
+                    isAdded = isAddedToWatchlist
+                )
             }
         }
     }
@@ -1607,16 +1618,20 @@ fun UserScoreItem(
 @Composable
 fun FavoriteItem(
     modifier: Modifier = Modifier,
+    isFavorite: Boolean = false,
+    onAddToFavorites: () -> Unit
 ) {
     Card(
         modifier = modifier.size(50.dp),
-        shape = CircleShape
+        shape = CircleShape,
+        onClick = onAddToFavorites
     ) {
         Image(
             modifier = Modifier
                 .size(50.dp)
                 .padding(8.dp),
-            painter = painterResource(id = R.drawable.baseline_favorite_24),
+            painter = if (isFavorite) painterResource(id = R.drawable.baseline_favorite_24_orange)
+            else painterResource(id = R.drawable.baseline_favorite_border_24),
             contentDescription = "favorite",
         )
     }
@@ -1625,16 +1640,20 @@ fun FavoriteItem(
 @Composable
 fun AddToWatchlistItem(
     modifier: Modifier = Modifier,
+    isAdded: Boolean = false,
+    onAddToWatchlist: () -> Unit
 ) {
     Card(
         modifier = modifier.size(50.dp),
-        shape = CircleShape
+        shape = CircleShape,
+        onClick = onAddToWatchlist
     ) {
         Image(
             modifier = Modifier
                 .size(50.dp)
                 .padding(8.dp),
-            painter = painterResource(id = R.drawable.baseline_bookmark_24),
+            painter = if (isAdded) painterResource(id = R.drawable.baseline_bookmark_24)
+            else painterResource(id = R.drawable.baseline_bookmark_border_24),
             contentDescription = "Add to watchlist",
         )
     }
@@ -1848,12 +1867,13 @@ fun VideosPager(
                    verticalAlignment = Alignment.CenterVertically
                ) {
                    repeat(pagerState.pageCount) { iteration ->
-                       val color = if (pagerState.currentPage == iteration) Color.DarkGray else Color.Transparent
+                       val color = if (pagerState.currentPage == iteration) Color.White else Color.Transparent
+                       val borderColor = if (pagerState.currentPage == iteration) Color.Transparent else Color.LightGray
                        Box(
                            modifier = Modifier
                                .padding(2.dp)
                                .clip(CircleShape)
-                               .border(Dp.Hairline, Color.LightGray)
+                               .border(1.dp, borderColor, shape = CircleShape)
                                .background(color)
                                .size(6.dp)
                        )
@@ -1861,6 +1881,39 @@ fun VideosPager(
                }
            }
         }
-
     }
+}
+
+/**
+ * Composable function to detect scroll position of list
+ * This will be used to hide FAB when scrolling down, and to Show BottomAppBar when scrolling up
+ */
+@Composable
+fun LazyListState.isScrollingUp(): Boolean {
+    var previousIndex by remember(this) {
+        mutableStateOf(firstVisibleItemIndex)
+    }
+    var previousScrollOffset by remember(this) { mutableStateOf(firstVisibleItemScrollOffset) }
+
+    return remember(this) {
+        derivedStateOf {
+            if (previousIndex != firstVisibleItemIndex) {
+                previousIndex > firstVisibleItemIndex
+            } else {
+                previousScrollOffset >= firstVisibleItemScrollOffset
+            }.also {
+                previousIndex = firstVisibleItemIndex
+                previousScrollOffset = firstVisibleItemScrollOffset
+            }
+        }
+    }.value
+}
+
+@Composable
+fun LoadingSpinner(modifier: Modifier = Modifier) {
+    CircularProgressIndicator(
+        color = DarkOrange,
+        modifier = modifier
+            .size(50.dp)
+    )
 }

@@ -41,6 +41,7 @@ import com.drew.themoviedatabase.Network.NetworkClient
 import com.drew.themoviedatabase.POJO.PersonDetails
 import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.composeUI.CombinedCreditsMovieList
+import com.drew.themoviedatabase.composeUI.LoadingSpinner
 import com.drew.themoviedatabase.composeUI.PhotosList
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.launch
@@ -87,19 +88,16 @@ fun CastDetailsScreen(
         }
     ) { innerPadding ->
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(50.dp)
-                )
-            }
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)) {
+            if (isLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center))
 
-        } else {
+            } else {
             LazyColumn(
                 modifier = modifier
-                    .padding(innerPadding)
+
                     .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -137,6 +135,7 @@ fun CastDetailsScreen(
                         )
                     }
                 }
+            }
             }
         }
     }

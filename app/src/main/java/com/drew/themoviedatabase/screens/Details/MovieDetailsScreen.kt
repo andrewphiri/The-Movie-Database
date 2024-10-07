@@ -24,12 +24,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -64,6 +66,7 @@ import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.composeUI.CastList
 import com.drew.themoviedatabase.composeUI.GenreList
+import com.drew.themoviedatabase.composeUI.LoadingSpinner
 import com.drew.themoviedatabase.composeUI.MovieList
 import com.drew.themoviedatabase.composeUI.MovieTVCertifications
 import com.drew.themoviedatabase.composeUI.OverviewText
@@ -75,6 +78,8 @@ import com.drew.themoviedatabase.composeUI.VideosList
 import com.drew.themoviedatabase.composeUI.YouTubePlayer
 import com.drew.themoviedatabase.formatDuration
 import com.drew.themoviedatabase.screens.Home.MoviesViewModel
+import com.drew.themoviedatabase.screens.Profile.MyMoviesTVsViewModel
+import com.drew.themoviedatabase.screens.Profile.UserViewModel
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -96,11 +101,17 @@ fun MovieDetailsScreen(
     navigateToCastDetails: (Int) -> Unit,
     navigateToReviews: (Int) -> Unit,
     navigateToTrailers: (Int) -> Unit,
+    moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
 
+    val user by userViewModel.getUser.collectAsState()
+
     var isLoading by remember { mutableStateOf(true) }
     var isTrailersEmpty by remember { mutableStateOf(true) }
+    var isFavorite by rememberSaveable { mutableStateOf(false) }
+    var isAddedToWatchlist by rememberSaveable { mutableStateOf(false) }
 
     val movieDetails by moviesViewModel.movieDetailsWithCastAndVideos.observeAsState()
     val similarMovies = moviesViewModel.getSimilarMovies(movieId).collectAsLazyPagingItems()
@@ -152,30 +163,27 @@ fun MovieDetailsScreen(
             )
         }
     ) { innerPadding ->
-
+        Box(modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()) {
             if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(50.dp) )
-                    }
+
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center))
 
             } else {
                 LazyColumn(
                     modifier = Modifier
-                        .padding(innerPadding)
                         .fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                item {
-                    MovieDetailsCard(
-                        movieDetails = movieDetails,
-                        trailers = movieDetails?.videos?.getResults(),
-                        isTrailersEmpty = isTrailersEmpty,
-                        navigateToTrailers = { navigateToTrailers(movieId) }
-                    )
-                }
+                    item {
+                        MovieDetailsCard(
+                            movieDetails = movieDetails,
+                            trailers = movieDetails?.videos?.getResults(),
+                            isTrailersEmpty = isTrailersEmpty,
+                            navigateToTrailers = { navigateToTrailers(movieId) }
+                        )
+                    }
                     if (movieDetails?.genres?.isNotEmpty() == true) {
                         item {
                             GenreList(
@@ -195,23 +203,62 @@ fun MovieDetailsScreen(
                     item {
                         RatingsAndVotes(
                             voteAverage = movieDetails?.voteAverage,
-                            voteCount = movieDetails?.voteCount
+                            voteCount = movieDetails?.voteCount,
+                            isFavorite = isFavorite,
+                            isAddedToWatchlist = isAddedToWatchlist,
+                            onAddToFavorites = {
+                                //isFavorite = !isFavorite
+                                if(user != null) {
+                                    coroutineScope.launch {
+                                       val addedToListResponse = moviesTVsViewModel.addToFavoriteOrWatchlist(
+                                            mediaType = "movie",
+                                            mediaID = movieId,
+                                            listType = "favorite",
+                                            accountId = user?.id ?: 0,
+                                            sessionId = user?.sessionId,
+                                            addToList = isFavorite
+                                        )
+                                        if (addedToListResponse?.success == true) {
+                                            isFavorite = !isFavorite
+                                        }
+                                    }
+                                }
+                            },
+                            onAddToWatchlist = {
+//                                isAddedToWatchlist = !isAddedToWatchlist
+
+                                if(user != null) {
+                                    coroutineScope.launch {
+                                       val addedToListResponse = moviesTVsViewModel.addToFavoriteOrWatchlist(
+                                            mediaType = "movie",
+                                            mediaID = movieId,
+                                            listType = "watchlist",
+                                            accountId = user?.id ?: 0,
+                                            sessionId = user?.sessionId,
+                                            addToList = isAddedToWatchlist
+                                        )
+                                        if (addedToListResponse?.success == true) {
+                                            isAddedToWatchlist = !isAddedToWatchlist
+                                        }
+                                    }
+                                }
+                            }
                         )
                     }
 
-                item {
-                    CastList(
-                        castMembers = movieDetails?.credits?.getCast(),
-                        crew = movieDetails?.credits?.getCrew(),
-                        navigateToCastDetailsScreen = navigateToCastDetails
-                    )
-                }
+                    item {
+                        CastList(
+                            castMembers = movieDetails?.credits?.getCast(),
+                            crew = movieDetails?.credits?.getCrew(),
+                            navigateToCastDetailsScreen = navigateToCastDetails
+                        )
+                    }
 
-                item {
-                    OtherMovieDetailsCard(
-                        movieDetails = movieDetails
-                    )
-                }
+                    item {
+                        OtherMovieDetailsCard(
+                            movieDetails = movieDetails
+                        )
+                    }
 
                     if (similarMovies.itemCount > 0) {
                         item {
@@ -229,7 +276,7 @@ fun MovieDetailsScreen(
                             ReviewList(
                                 reviews = reviews,
                                 categoryTitle = "Reviews",
-                                onItemClick = {navigateToReviews(movieId)}
+                                onItemClick = { navigateToReviews(movieId) }
                             )
                         }
                     }
@@ -238,7 +285,8 @@ fun MovieDetailsScreen(
                         item {
                             PhotosList(
                                 photos = photos,
-                                categoryTitle = "Photos" )
+                                categoryTitle = "Photos"
+                            )
                         }
                     }
 
@@ -250,7 +298,7 @@ fun MovieDetailsScreen(
                             )
                         }
                     }
-
+               }
             }
         }
     }

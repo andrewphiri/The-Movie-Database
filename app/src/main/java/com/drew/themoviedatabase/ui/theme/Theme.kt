@@ -1,6 +1,6 @@
 package com.drew.themoviedatabase.ui.theme
 
-import android.app.Activity
+
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +24,7 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Pink40,
     background = DarkBackground,
     onBackground = Color.White,
-    surface = DarkBackground,
+    surface = DarkSurface,
     onSurface = Color.White,
 
     /* Other default colors to override
@@ -57,6 +57,15 @@ fun TheMovieDatabaseTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = Typography,
+        content = content
+    )
+}
+
+@Composable
+fun TheMovieDatabaseDarkTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = DarkColorScheme, // Use darkColors() or your custom dark color palette
         typography = Typography,
         content = content
     )

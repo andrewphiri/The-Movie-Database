@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.drew.themoviedatabase.Network.MovieImagesResponse
@@ -13,7 +15,14 @@ import com.drew.themoviedatabase.POJO.Photos
 import com.drew.themoviedatabase.POJO.Reviews
 import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.POJO.Trailers
+import com.drew.themoviedatabase.repository.TVShows.AiringTodayPagingSource
+import com.drew.themoviedatabase.repository.TVShows.OnTheAirShowsPagingSource
+import com.drew.themoviedatabase.repository.TVShows.PopularShowsPagingSource
+import com.drew.themoviedatabase.repository.TVShows.SimilarTVShowsPagingSource
+import com.drew.themoviedatabase.repository.TVShows.TVReviewsPagingSource
+import com.drew.themoviedatabase.repository.TVShows.TVShowPhotosPagingSource
 import com.drew.themoviedatabase.repository.TVShows.TVShowsRepository
+import com.drew.themoviedatabase.repository.TVShows.TopShowsPagingSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -23,10 +32,25 @@ class TVShowsViewModel @Inject constructor(
     private val repository: TVShowsRepository,
 ) : ViewModel() {
 
-    val tvShowsPopular = repository.getPopularTVShows().cachedIn(viewModelScope)
-    val tvShowsTopRated = repository.getTopRatedTVShows().cachedIn(viewModelScope)
-    val tvShowsOnTheAir = repository.getOnTheAirTVShows().cachedIn(viewModelScope)
-    val tvShowsAiringToday = repository.getAiringTodayTVShows().cachedIn(viewModelScope)
+    val tvShowsPopular = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { PopularShowsPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+
+    val tvShowsTopRated = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { TopShowsPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+
+    val tvShowsOnTheAir = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { OnTheAirShowsPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
+
+    val tvShowsAiringToday = Pager(
+        config = PagingConfig(pageSize = 10),
+        pagingSourceFactory = { AiringTodayPagingSource(repository) }
+    ).flow.cachedIn(viewModelScope)
 
     private val _onTheAirTVShows = MutableLiveData<List<TVShowDetails?>?>()
     val onTheAirTVShows: LiveData<List<TVShowDetails?>?> get()  = _onTheAirTVShows
@@ -59,7 +83,10 @@ class TVShowsViewModel @Inject constructor(
     val certifications: LiveData<Certifications?> get()  = _certifications
 
     fun getSimilarTVShows(seriesId: Int) : Flow<PagingData<TVShowDetails>> {
-        return repository.getSimilarTVShows(seriesId).cachedIn(viewModelScope)
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { SimilarTVShowsPagingSource(repository, seriesId) }
+        ).flow.cachedIn(viewModelScope)
     }
 
     fun fetchPopularTVShows(pages: Int) {
@@ -138,11 +165,17 @@ class TVShowsViewModel @Inject constructor(
     }
 
     fun getPhotos(seriesId: Int) : Flow<PagingData<Photos>> {
-        return repository.getShowImages(seriesId).cachedIn(viewModelScope)
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { TVShowPhotosPagingSource(repository, seriesId) }
+        ).flow.cachedIn(viewModelScope)
     }
 
-    fun getReviews(movieId: Int): Flow<PagingData<Reviews>> {
-        return repository.getReviews(movieId).cachedIn(viewModelScope)
+    fun getReviews(seriesId: Int): Flow<PagingData<Reviews>> {
+        return Pager(
+            config = PagingConfig(pageSize = 10),
+            pagingSourceFactory = { TVReviewsPagingSource(repository, seriesId) }
+        ).flow.cachedIn(viewModelScope)
     }
 
     suspend fun getTotalPagesPopular() : Int  {

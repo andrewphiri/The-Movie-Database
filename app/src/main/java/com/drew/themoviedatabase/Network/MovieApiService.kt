@@ -76,6 +76,14 @@ interface MovieApiService {
         @Query ("page") page: Int = 1,
         @Query("query") query: String) : Call <MultiSearchResponse?>?
 
+    @GET("trending/all/{time_window}")
+    fun getAllTrendingMedia(
+        @Path("time_window") timeWindow: String = "week",
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String,
+        @Query ("page") page: Int = 1): Call <MultiSearchResponse?>?
+
+
     @GET("movie/popular")
     fun getPopularMovies(
         @Query("api_key") apiKey: String,
