@@ -1,12 +1,8 @@
 package com.drew.themoviedatabase.screens.Videos
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,12 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.drew.themoviedatabase.MovieTopAppBar
-import com.drew.themoviedatabase.POJO.Trailers
-import com.drew.themoviedatabase.composeUI.VideosList
-import com.drew.themoviedatabase.composeUI.VideosPager
-import com.drew.themoviedatabase.composeUI.YouTubePlayer
-import com.drew.themoviedatabase.composeUI.YouTubeSinglePlayer
-import com.drew.themoviedatabase.screens.Home.MoviesViewModel
+import com.drew.themoviedatabase.screens.commonComposeUi.VideosPager
+import com.drew.themoviedatabase.screens.Details.MoviesViewModel
 import kotlinx.serialization.Serializable
 
 @Serializable

@@ -6,21 +6,18 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.drew.themoviedatabase.POJO.AddedToListResponse
-import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
-import com.drew.themoviedatabase.POJO.TVShowDetails
-import com.drew.themoviedatabase.repository.mymoviestv.FavoriteMoviesPagingSource
-import com.drew.themoviedatabase.repository.mymoviestv.FavoriteTvPagingSource
-import com.drew.themoviedatabase.repository.mymoviestv.MoviesWatchlistPagingSource
-import com.drew.themoviedatabase.repository.mymoviestv.MyMoviesTvRepository
-import com.drew.themoviedatabase.repository.mymoviestv.RatedMoviesPagingSource
-import com.drew.themoviedatabase.repository.mymoviestv.RatedTvPagingSource
-import com.drew.themoviedatabase.repository.mymoviestv.TvWatchlistPagingSource
-import com.google.gson.JsonObject
+import com.drew.themoviedatabase.data.remote.AddedToListResponse
+import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.mymoviestv.FavoriteMoviesPagingSource
+import com.drew.themoviedatabase.data.repository.mymoviestv.FavoriteTvPagingSource
+import com.drew.themoviedatabase.data.repository.mymoviestv.MoviesWatchlistPagingSource
+import com.drew.themoviedatabase.data.repository.mymoviestv.MyMoviesTvRepository
+import com.drew.themoviedatabase.data.repository.mymoviestv.RatedMoviesPagingSource
+import com.drew.themoviedatabase.data.repository.mymoviestv.RatedTvPagingSource
+import com.drew.themoviedatabase.data.repository.mymoviestv.TvWatchlistPagingSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -36,7 +33,7 @@ class MyMoviesTVsViewModel @Inject constructor(
             pagingSourceFactory = { RatedMoviesPagingSource(myMoviesTvRepository, accountId, sessionId) }
         ).flow.cachedIn(viewModelScope)
     }
-    fun getMyRatedTVShows(accountId: Int, sessionId: String?) : Flow<PagingData<TVShowDetails>> {
+    fun getMyRatedTVShows(accountId: Int, sessionId: String?) : Flow<PagingData<com.drew.themoviedatabase.data.model.TVShowDetails>> {
         return Pager(
             config = PagingConfig(pageSize = 10),
             pagingSourceFactory = { RatedTvPagingSource(myMoviesTvRepository, accountId, sessionId) }
@@ -50,7 +47,7 @@ class MyMoviesTVsViewModel @Inject constructor(
         ).flow.cachedIn(viewModelScope)
     }
 
-    fun getMyFavoriteTVShows(accountId: Int, sessionId: String?) : Flow<PagingData<TVShowDetails>> {
+    fun getMyFavoriteTVShows(accountId: Int, sessionId: String?) : Flow<PagingData<com.drew.themoviedatabase.data.model.TVShowDetails>> {
         return Pager(
             config = PagingConfig(pageSize = 10),
             pagingSourceFactory = { FavoriteTvPagingSource(myMoviesTvRepository, accountId, sessionId) }
@@ -64,7 +61,7 @@ class MyMoviesTVsViewModel @Inject constructor(
         ).flow.cachedIn(viewModelScope)
     }
 
-    fun getMyWatchlistTVShows(accountId: Int, sessionId: String?) : Flow<PagingData<TVShowDetails>> {
+    fun getMyWatchlistTVShows(accountId: Int, sessionId: String?) : Flow<PagingData<com.drew.themoviedatabase.data.model.TVShowDetails>> {
         return Pager(
             config = PagingConfig(pageSize = 10),
             pagingSourceFactory = { TvWatchlistPagingSource(myMoviesTvRepository, accountId, sessionId) }
@@ -96,7 +93,7 @@ class MyMoviesTVsViewModel @Inject constructor(
         return myMoviesTvRepository.fetchRatedMovieDetails(pages, accountId, sessionId)
     }
 
-    suspend fun fetchRatedTVShows(pages: Int, accountId: Int, sessionId: String?) : List<TVShowDetails?>? {
+    suspend fun fetchRatedTVShows(pages: Int, accountId: Int, sessionId: String?) : List<com.drew.themoviedatabase.data.model.TVShowDetails?>? {
         return myMoviesTvRepository.fetchRatedTVShows(pages, accountId, sessionId)
     }
     suspend fun fetchFavoriteMovieDetails(pages: Int, accountId: Int, sessionId: String?): List<MovieDetailsReleaseData?>? {

@@ -1,7 +1,6 @@
 package com.drew.themoviedatabase.screens.Details
 
 import android.content.res.Resources
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,10 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -36,7 +33,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -47,48 +43,29 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.os.ConfigurationCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewModelScope
-import androidx.paging.cachedIn
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.filter
-import androidx.paging.map
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.MovieTopAppBar
-import com.drew.themoviedatabase.Network.MovieDetailsResponse
-import com.drew.themoviedatabase.Network.NetworkClient
-import com.drew.themoviedatabase.Network.TVShowDetailsWithCastAndVideos
-import com.drew.themoviedatabase.POJO.Certifications
-import com.drew.themoviedatabase.POJO.Photos
-import com.drew.themoviedatabase.POJO.Provider
-import com.drew.themoviedatabase.POJO.Reviews
-import com.drew.themoviedatabase.POJO.TVShowDetails
-import com.drew.themoviedatabase.POJO.Trailers
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.Utilities.getWatchRegion
-import com.drew.themoviedatabase.composeUI.CastList
-import com.drew.themoviedatabase.composeUI.ExpandableText
-import com.drew.themoviedatabase.composeUI.GenreList
-import com.drew.themoviedatabase.composeUI.LoadingSpinner
-import com.drew.themoviedatabase.composeUI.MovieTVCertifications
-import com.drew.themoviedatabase.composeUI.OverviewText
-import com.drew.themoviedatabase.composeUI.PhotosList
-import com.drew.themoviedatabase.composeUI.ProvidersList
-import com.drew.themoviedatabase.composeUI.RatingsAndVotes
-import com.drew.themoviedatabase.composeUI.ReviewList
-import com.drew.themoviedatabase.composeUI.TVShowList
-import com.drew.themoviedatabase.composeUI.VideosList
-import com.drew.themoviedatabase.composeUI.YouTubePlayer
-import com.drew.themoviedatabase.screens.Home.TVShowsViewModel
+import com.drew.themoviedatabase.data.model.Trailers
+import com.drew.themoviedatabase.data.remote.TVShowDetailsWithCastAndVideos
+import com.drew.themoviedatabase.screens.commonComposeUi.CastList
+import com.drew.themoviedatabase.screens.commonComposeUi.GenreList
+import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
+import com.drew.themoviedatabase.screens.commonComposeUi.MovieTVCertifications
+import com.drew.themoviedatabase.screens.commonComposeUi.OverviewText
+import com.drew.themoviedatabase.screens.commonComposeUi.PhotosList
+import com.drew.themoviedatabase.screens.commonComposeUi.ProvidersList
+import com.drew.themoviedatabase.screens.commonComposeUi.RatingsAndVotes
+import com.drew.themoviedatabase.screens.commonComposeUi.ReviewList
+import com.drew.themoviedatabase.screens.commonComposeUi.TVShowList
+import com.drew.themoviedatabase.screens.commonComposeUi.YouTubePlayer
 import com.drew.themoviedatabase.screens.Profile.MyMoviesTVsViewModel
 import com.drew.themoviedatabase.screens.Profile.UserViewModel
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -430,7 +407,7 @@ fun TVDetailsCard(
                 modifier = Modifier
                     .height(175.dp)
                     .width(100.dp),
-                model = NetworkClient().getPosterUrl(tvShow?.posterPath),
+                model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(tvShow?.posterPath),
                 contentDescription = "${tvShow?.name} poster",
                 placeholder = null
             )
@@ -546,7 +523,7 @@ fun TVWatchProviderList(
     val watchProvidersRent = tvShow?.watchProviders?.results?.get(watchRegion)?.rent?.toList()
     val watchProvidersFlatrate = tvShow?.watchProviders?.results?.get(watchRegion)?.flatrate?.toList()
     val watchProvidersFree = tvShow?.watchProviders?.results?.get(watchRegion)?.free?.toList()
-    val allProviders: SnapshotStateList<Provider>? = remember { mutableStateListOf() }
+    val allProviders: SnapshotStateList<com.drew.themoviedatabase.data.model.Provider>? = remember { mutableStateListOf() }
     if (watchProvidersRent != null) {
         allProviders?.addAll(watchProvidersRent)
     }
@@ -623,7 +600,7 @@ fun TVWatchProviderList(
 
 @Composable
 fun TVCertifications(
-    certifications: Certifications?,
+    certifications: com.drew.themoviedatabase.data.model.Certifications?,
     tvShow: TVShowDetailsWithCastAndVideos?,
 ) {
 

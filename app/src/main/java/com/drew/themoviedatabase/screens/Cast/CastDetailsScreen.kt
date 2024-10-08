@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,18 +29,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.MovieTopAppBar
-import com.drew.themoviedatabase.Network.NetworkClient
-import com.drew.themoviedatabase.POJO.PersonDetails
 import com.drew.themoviedatabase.R
-import com.drew.themoviedatabase.composeUI.CombinedCreditsMovieList
-import com.drew.themoviedatabase.composeUI.LoadingSpinner
-import com.drew.themoviedatabase.composeUI.PhotosList
+import com.drew.themoviedatabase.screens.commonComposeUi.CombinedCreditsMovieList
+import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
+import com.drew.themoviedatabase.screens.commonComposeUi.PhotosList
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -144,7 +138,7 @@ fun CastDetailsScreen(
 @Composable
 fun CastDetailItem(
     modifier: Modifier = Modifier,
-    personDetails: PersonDetails?,
+    personDetails: com.drew.themoviedatabase.data.model.PersonDetails?,
     onBiographyClick: () -> Unit,
     isBiographyShowing: Boolean,
     onDismiss: () -> Unit
@@ -175,7 +169,8 @@ fun CastDetailItem(
             if (personDetails != null) {
                 AsyncImage(
                     modifier = Modifier.weight(1f, true),
-                    model = NetworkClient().getPosterUrl(personDetails.profilePath, imageSize = "w500"),
+                    model = com.drew.themoviedatabase.data.remote.NetworkClient()
+                        .getPosterUrl(personDetails.profilePath, imageSize = "w500"),
                     contentDescription = "${personDetails.name} profile picture",
                     placeholder = painterResource(R.drawable.baseline_person_24)
                 )

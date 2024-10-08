@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,16 +32,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.drew.themoviedatabase.ComposeUtils.PullToRefresh
-import com.drew.themoviedatabase.Network.MultiSearchResult
-import com.drew.themoviedatabase.composeUI.LoadingSpinner
-import com.drew.themoviedatabase.composeUI.MovieList
-import com.drew.themoviedatabase.composeUI.PopularPeopleList
-import com.drew.themoviedatabase.composeUI.TVShowList
+import com.drew.themoviedatabase.screens.commonComposeUi.PullToRefresh
+import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
+import com.drew.themoviedatabase.screens.commonComposeUi.PopularPeopleList
+import com.drew.themoviedatabase.screens.commonComposeUi.TVShowList
+import com.drew.themoviedatabase.data.remote.MultiSearchResult
 import com.drew.themoviedatabase.screens.Cast.CastViewModel
 import com.drew.themoviedatabase.screens.Search.CastCardSearchItem
 import com.drew.themoviedatabase.screens.Search.MovieItemSearch
 import com.drew.themoviedatabase.screens.Search.TVShowItemsSearch
+import com.drew.themoviedatabase.screens.commonComposeUi.MovieList
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,8 +53,8 @@ object HomeScreen
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    moviesViewModel: MoviesViewModel = hiltViewModel(),
-    tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
+    moviesViewModel: HomeMoviesViewModel = hiltViewModel(),
+    tvShowsViewModel: HomeTVViewModel = hiltViewModel(),
     castViewModel: CastViewModel = hiltViewModel(),
     navigateToMovieDetails: (Int) -> Unit,
     navigateToTVShowDetails: (Int) -> Unit,
@@ -81,8 +79,6 @@ fun HomeScreen(
     val tvShowsOnTheAirTVShows = tvShowsViewModel.tvShowsOnTheAir.collectAsLazyPagingItems()
 
     val popularPeople = castViewModel.popularPeople.collectAsLazyPagingItems()
-
-
 
     if(
         moviesPopular.loadState.refresh is LoadState.NotLoading

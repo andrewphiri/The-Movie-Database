@@ -1,6 +1,5 @@
 package com.drew.themoviedatabase.screens.Search
 
-import android.app.appsearch.SearchResults
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -25,18 +22,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
@@ -46,23 +38,14 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.paging.cachedIn
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
-import com.drew.themoviedatabase.Network.MultiSearchResult
-import com.drew.themoviedatabase.Network.NetworkClient
-import com.drew.themoviedatabase.POJO.CastMembers
-import com.drew.themoviedatabase.POJO.Provider
-import com.drew.themoviedatabase.POJO.TVShowDetails
 import com.drew.themoviedatabase.R
-import com.drew.themoviedatabase.composeUI.ProvidersList
-import com.drew.themoviedatabase.formatDuration
-import com.drew.themoviedatabase.screens.Home.MoviesViewModel
+import com.drew.themoviedatabase.data.remote.MultiSearchResult
+import com.drew.themoviedatabase.screens.Details.MoviesViewModel
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.serialization.Serializable
-import retrofit2.http.Query
 
 @Serializable
 object SearchScreen
@@ -209,7 +192,7 @@ fun TVShowItemsSearch(
         AsyncImage(
             modifier = Modifier
                 .fillMaxWidth(),
-            model = NetworkClient().getPosterUrl(tvShow?.poster_path),
+            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(tvShow?.poster_path),
             contentDescription = "${tvShow?.name} poster",
             placeholder = painterResource(R.drawable.mdb_1)
         )
@@ -282,7 +265,7 @@ fun CastCardSearchItem(
     ) {
         AsyncImage(
             modifier = Modifier.fillMaxWidth(),
-            model = NetworkClient().getPosterUrl(person?.profile_path),
+            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(person?.profile_path),
             contentDescription = "${person?.name} profile picture",
         )
 
@@ -335,7 +318,7 @@ fun MovieItemSearch(
         AsyncImage(
             modifier = Modifier
                 .fillMaxWidth(),
-            model = NetworkClient().getPosterUrl(movie?.poster_path),
+            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(movie?.poster_path),
             contentDescription = "${movie?.title} poster",
             placeholder = painterResource(R.drawable.mdb_1)
         )

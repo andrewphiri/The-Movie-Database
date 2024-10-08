@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,10 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.drew.themoviedatabase.MovieTopAppBar
-import com.drew.themoviedatabase.POJO.Reviews
-import com.drew.themoviedatabase.composeUI.LoadingSpinner
-import com.drew.themoviedatabase.composeUI.UserReviewList
-import com.drew.themoviedatabase.screens.Home.MoviesViewModel
+import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
+import com.drew.themoviedatabase.screens.commonComposeUi.UserReviewList
+import com.drew.themoviedatabase.screens.Details.MoviesViewModel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -40,7 +37,7 @@ fun MovieUserReviewsScreen(
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
-    var reviews by remember { mutableStateOf<List<Reviews?>?>(null) }
+    var reviews by remember { mutableStateOf<List<com.drew.themoviedatabase.data.model.Reviews?>?>(null) }
     var isLoading by remember{ mutableStateOf(false) }
 
     LaunchedEffect(Unit) {

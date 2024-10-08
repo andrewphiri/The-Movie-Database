@@ -8,13 +8,11 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.drew.themoviedatabase.Network.CombinedCreditsResponse
-import com.drew.themoviedatabase.Network.PersonPhotosResponse
-import com.drew.themoviedatabase.POJO.PersonDetails
-import com.drew.themoviedatabase.POJO.Photos
-import com.drew.themoviedatabase.repository.CastPhotosPagingSource
-import com.drew.themoviedatabase.repository.PersonRepository
-import com.drew.themoviedatabase.repository.PopularPeoplePagingSource
+import com.drew.themoviedatabase.data.remote.CombinedCreditsResponse
+import com.drew.themoviedatabase.data.remote.PersonPhotosResponse
+import com.drew.themoviedatabase.data.repository.CastPhotosPagingSource
+import com.drew.themoviedatabase.data.repository.PersonRepository
+import com.drew.themoviedatabase.data.repository.PopularPeoplePagingSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -23,8 +21,8 @@ import javax.inject.Inject
 class CastViewModel @Inject constructor(
     private val repository: PersonRepository,
 ) : ViewModel(){
-    private val _personDetails = MutableLiveData<PersonDetails?>()
-    val personDetails: LiveData<PersonDetails?> get() = _personDetails
+    private val _personDetails = MutableLiveData<com.drew.themoviedatabase.data.model.PersonDetails?>()
+    val personDetails: LiveData<com.drew.themoviedatabase.data.model.PersonDetails?> get() = _personDetails
 
     private val _personImages = MutableLiveData<PersonPhotosResponse?>()
     val personImages: LiveData<PersonPhotosResponse?> get() = _personImages
@@ -45,7 +43,7 @@ class CastViewModel @Inject constructor(
         }
     }
 
-    fun getPersonImages(personId: Int) : Flow<PagingData<Photos>> {
+    fun getPersonImages(personId: Int) : Flow<PagingData<com.drew.themoviedatabase.data.model.Photos>> {
         return Pager(
             config = PagingConfig(pageSize = 10),
             pagingSourceFactory = { CastPhotosPagingSource(repository, personId) }

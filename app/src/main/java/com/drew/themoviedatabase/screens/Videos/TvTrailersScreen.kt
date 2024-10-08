@@ -14,9 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.drew.themoviedatabase.MovieTopAppBar
-import com.drew.themoviedatabase.composeUI.VideosList
-import com.drew.themoviedatabase.composeUI.VideosPager
-import com.drew.themoviedatabase.screens.Home.TVShowsViewModel
+import com.drew.themoviedatabase.screens.commonComposeUi.VideosPager
+import com.drew.themoviedatabase.screens.Details.TVShowsViewModel
 import kotlinx.serialization.Serializable
 
 @Serializable

@@ -2,7 +2,7 @@ package com.drew.themoviedatabase.Utilities
 
 import android.content.res.Resources
 import androidx.core.os.ConfigurationCompat
-import com.drew.themoviedatabase.POJO.Trailers
+import com.drew.themoviedatabase.data.model.Trailers
 import java.util.Locale
 
 fun findPreferredVideo(trailers: List<Trailers?>?): String? {

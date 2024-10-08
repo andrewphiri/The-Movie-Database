@@ -47,15 +47,13 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
-import com.drew.themoviedatabase.ComposeUtils.PullToRefresh
-import com.drew.themoviedatabase.Network.NetworkClient
-import com.drew.themoviedatabase.POJO.MovieDetailsReleaseData
-import com.drew.themoviedatabase.POJO.TVShowDetails
-import com.drew.themoviedatabase.POJO.UserDetails
+import com.drew.themoviedatabase.screens.commonComposeUi.PullToRefresh
+import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
 import com.drew.themoviedatabase.R
-import com.drew.themoviedatabase.composeUI.LoadingSpinner
-import com.drew.themoviedatabase.composeUI.MovieList
-import com.drew.themoviedatabase.composeUI.TVShowList
+import com.drew.themoviedatabase.data.model.UserDetails
+import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
+import com.drew.themoviedatabase.screens.commonComposeUi.MovieList
+import com.drew.themoviedatabase.screens.commonComposeUi.TVShowList
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -136,7 +134,7 @@ fun ProfileScreen(
         LaunchedEffect(key1 = approval) {
             if (user == null) {
                 isLoading = true
-                delay(2000)
+                //delay(2000)
                 sessionID = loginViewModel.requestSessionID(token)
                 //Log.d("PROFILE_SCREEN", "Session ID: $sessionID")
                 loadingMessage = "Getting account details..."
@@ -245,10 +243,10 @@ fun ProfileScreen(
 
                                     val logout = loginViewModel.deleteSession(sessionId = sessionID ?: "")
                                     delay(2000)
-                                    Log.d("PROFILE_SCREEN", "Logout: $logout")
+                                    //Log.d("PROFILE_SCREEN", "Logout: $logout")
 
                                     user?.let { userViewModel.delete(it) }
-                                    Log.d("USERDETAILS", "$user")
+                                    //Log.d("USERDETAILS", "$user")
                                     sessionID = null
                                     Log.d("SESSION", "$sessionID")
                                     accountID = 21411766
@@ -285,11 +283,11 @@ fun ProfileScreen(
 fun MoviesTVLists(
     modifier: Modifier = Modifier,
     favoriteMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    favoriteTVShows: LazyPagingItems<TVShowDetails>,
+    favoriteTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     ratedMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    ratedTVShows: LazyPagingItems<TVShowDetails>,
+    ratedTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     watchlistMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    watchlistTVShows: LazyPagingItems<TVShowDetails>,
+    watchlistTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     onClickSignUp: () -> Unit,
     user: UserDetails?,
     onShowDialog: () -> Unit,
@@ -467,11 +465,11 @@ fun ProfileStatisticsListCard(
     user: UserDetails?,
     onClickSignUp: () -> Unit,
     favoriteMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    favoriteTVShows: LazyPagingItems<TVShowDetails>,
+    favoriteTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     ratedMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    ratedTVShows: LazyPagingItems<TVShowDetails>,
+    ratedTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     watchlistMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    watchlistTVShows: LazyPagingItems<TVShowDetails>,
+    watchlistTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     onShowDialog: () -> Unit
 ) {
     Column(
@@ -481,7 +479,8 @@ fun ProfileStatisticsListCard(
     ) {
         ProfileHeader(
             profilePicture = if (user?.avatar_path != null)
-                NetworkClient().getPosterUrl(user.avatar_path, imageSize = "w200") else null,
+                com.drew.themoviedatabase.data.remote.NetworkClient()
+                    .getPosterUrl(user.avatar_path, imageSize = "w200") else null,
             name = if (user?.name?.isNotEmpty() == true) user.name else user?.username,
             onShowDialog = onShowDialog,
             user = user
@@ -566,13 +565,13 @@ fun ProfileHeader(
 
 @Composable
 fun ProfileStatisticsList(
-   modifier: Modifier = Modifier,
-   favoriteMovies: LazyPagingItems<MovieDetailsReleaseData>,
-   favoriteTVShows: LazyPagingItems<TVShowDetails>,
-   ratedMovies: LazyPagingItems<MovieDetailsReleaseData>,
-   ratedTVShows: LazyPagingItems<TVShowDetails>,
-   watchlistMovies: LazyPagingItems<MovieDetailsReleaseData>,
-   watchlistTVShows: LazyPagingItems<TVShowDetails>
+    modifier: Modifier = Modifier,
+    favoriteMovies: LazyPagingItems<MovieDetailsReleaseData>,
+    favoriteTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
+    ratedMovies: LazyPagingItems<MovieDetailsReleaseData>,
+    ratedTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
+    watchlistMovies: LazyPagingItems<MovieDetailsReleaseData>,
+    watchlistTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>
 ) {
     LazyRow(
         modifier = modifier,
@@ -630,11 +629,11 @@ fun ProfileStatisticsCard(
 }
 fun refreshData(
     favoriteMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    favoriteTVShows: LazyPagingItems<TVShowDetails>,
+    favoriteTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     ratedMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    ratedTVShows: LazyPagingItems<TVShowDetails>,
+    ratedTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>,
     watchlistMovies: LazyPagingItems<MovieDetailsReleaseData>,
-    watchlistTVShows: LazyPagingItems<TVShowDetails>
+    watchlistTVShows: LazyPagingItems<com.drew.themoviedatabase.data.model.TVShowDetails>
 ) {
     favoriteMovies.refresh()
     favoriteTVShows.refresh()

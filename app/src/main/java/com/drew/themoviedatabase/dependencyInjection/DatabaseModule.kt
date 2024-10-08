@@ -2,8 +2,8 @@ package com.drew.themoviedatabase.dependencyInjection
 
 import android.content.Context
 import androidx.room.Room
-import com.drew.themoviedatabase.data.UserDao
-import com.drew.themoviedatabase.data.UserDatabase
+import com.drew.themoviedatabase.data.room.UserDao
+import com.drew.themoviedatabase.data.room.UserDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

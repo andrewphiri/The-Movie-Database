@@ -8,10 +8,8 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drew.themoviedatabase.MoviesApplication
-import com.drew.themoviedatabase.POJO.DeleteSession
-import com.drew.themoviedatabase.POJO.UserProfile
-import com.drew.themoviedatabase.repository.login.LoginRepository
-import com.google.gson.JsonObject
+import com.drew.themoviedatabase.data.model.UserProfile
+import com.drew.themoviedatabase.data.repository.login.LoginRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -73,7 +71,7 @@ class LoginViewModel @Inject constructor(
         return loginRepository.requestToken()?.request_token
     }
 
-    suspend fun deleteSession(sessionId: String) : Response<DeleteSession>? {
+    suspend fun deleteSession(sessionId: String) : Response<com.drew.themoviedatabase.data.model.DeleteSession>? {
         return loginRepository.deleteSessionID(sessionId)
     }
 

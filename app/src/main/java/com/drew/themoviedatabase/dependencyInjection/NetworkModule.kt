@@ -1,13 +1,12 @@
 package com.drew.themoviedatabase.dependencyInjection
 
-import com.drew.themoviedatabase.Network.BASE_URL
-import com.drew.themoviedatabase.Network.CastApiService
-import com.drew.themoviedatabase.Network.LoginApiService
-import com.drew.themoviedatabase.Network.MovieApiService
-import com.drew.themoviedatabase.Network.MultiSearchResult
-import com.drew.themoviedatabase.Network.MyAccountApiService
-import com.drew.themoviedatabase.Network.TVShowApiService
 import com.drew.themoviedatabase.Utilities.MultiSearchResultAdapter
+import com.drew.themoviedatabase.data.remote.CastApiService
+import com.drew.themoviedatabase.data.remote.LoginApiService
+import com.drew.themoviedatabase.data.remote.MovieApiService
+import com.drew.themoviedatabase.data.remote.MultiSearchResult
+import com.drew.themoviedatabase.data.remote.MyAccountApiService
+import com.drew.themoviedatabase.data.remote.TVShowApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -30,7 +29,7 @@ object NetworkModule {
     @Provides
     fun provideRetrofit(gson: Gson): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(com.drew.themoviedatabase.data.remote.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }

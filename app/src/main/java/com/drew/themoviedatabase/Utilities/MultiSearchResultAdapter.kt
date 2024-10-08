@@ -1,6 +1,6 @@
 package com.drew.themoviedatabase.Utilities
 
-import com.drew.themoviedatabase.Network.MultiSearchResult
+import com.drew.themoviedatabase.data.remote.MultiSearchResult
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.TypeAdapter
