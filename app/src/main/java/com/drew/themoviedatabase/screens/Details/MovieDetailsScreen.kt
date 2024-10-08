@@ -216,8 +216,9 @@ fun MovieDetailsScreen(
                                             listType = "favorite",
                                             accountId = user?.id ?: 0,
                                             sessionId = user?.sessionId,
-                                            addToList = isFavorite
+                                            addToList = !isFavorite
                                         )
+                                        //Log.d("addToFavorites", "MovieDetailsScreen: $addedToListResponse")
                                         if (addedToListResponse?.success == true) {
                                             isFavorite = !isFavorite
                                         }
@@ -235,8 +236,9 @@ fun MovieDetailsScreen(
                                             listType = "watchlist",
                                             accountId = user?.id ?: 0,
                                             sessionId = user?.sessionId,
-                                            addToList = isAddedToWatchlist
+                                            addToList = !isAddedToWatchlist
                                         )
+                                        //Log.d("addToWatchlist", "MovieDetailsScreen: $addedToListResponse")
                                         if (addedToListResponse?.success == true) {
                                             isAddedToWatchlist = !isAddedToWatchlist
                                         }

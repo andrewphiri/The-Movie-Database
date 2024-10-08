@@ -238,7 +238,7 @@ fun TVDetailsScreen(
                                             listType = "favorite",
                                             accountId = user?.id ?: 0,
                                             sessionId = user?.sessionId,
-                                            addToList = isFavorite
+                                            addToList = !isFavorite
                                         )
                                         if (addedToListResponse?.success == true) {
                                             isFavorite = !isFavorite
@@ -256,7 +256,7 @@ fun TVDetailsScreen(
                                             listType = "watchlist",
                                             accountId = user?.id ?: 0,
                                             sessionId = user?.sessionId,
-                                            addToList = isAddedToWatchlist
+                                            addToList = !isAddedToWatchlist
                                         )
                                         if (addedToListResponse?.success == true) {
                                             isAddedToWatchlist = !isAddedToWatchlist
