@@ -1,6 +1,7 @@
 package com.drew.themoviedatabase.screens.Details
 
 import android.content.res.Resources
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,6 +65,7 @@ import com.drew.themoviedatabase.screens.commonComposeUi.TVShowList
 import com.drew.themoviedatabase.screens.commonComposeUi.YouTubePlayer
 import com.drew.themoviedatabase.screens.Profile.MyMoviesTVsViewModel
 import com.drew.themoviedatabase.screens.Profile.UserViewModel
+import com.drew.themoviedatabase.screens.commonComposeUi.ShowPhotosDialog
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -116,6 +118,8 @@ fun TVDetailsScreen(
     val reviews  = tvShowsViewModel.getReviews(seriesId).collectAsLazyPagingItems()
     val photos = tvShowsViewModel.getPhotos(seriesId).collectAsLazyPagingItems()
     val certifications by tvShowsViewModel.certifications.observeAsState()
+    var isPhotosDialogShowing by rememberSaveable { mutableStateOf(false) }
+    var initialPage by rememberSaveable { mutableStateOf(1) }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -163,6 +167,17 @@ fun TVDetailsScreen(
     ) { innerPadding ->
         Box(modifier = Modifier
             .padding(innerPadding).fillMaxSize()) {
+
+            AnimatedVisibility(
+                visible = isPhotosDialogShowing,
+            ) {
+                ShowPhotosDialog(
+                    photos = photos.itemSnapshotList.items.map { it.filePath },
+                    onDismiss = { isPhotosDialogShowing = false },
+                    initialPage = initialPage
+                )
+            }
+
             if (isLoading) {
                 LoadingSpinner(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -286,7 +301,11 @@ fun TVDetailsScreen(
                         item {
                             PhotosList(
                                 photos = photos,
-                                categoryTitle = "Photos"
+                                categoryTitle = "Photos",
+                                onPhotoClick = {
+                                    isPhotosDialogShowing = true
+                                    initialPage = it
+                                }
                             )
                         }
                     }

@@ -1,7 +1,7 @@
 package com.drew.themoviedatabase.data.repository.mymoviestv
 
 import com.drew.themoviedatabase.data.remote.AddedToListResponse
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.Movies.MovieDetailsReleaseData
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.data.remote.MovieResponse
 import com.drew.themoviedatabase.data.remote.MyAccountApiService

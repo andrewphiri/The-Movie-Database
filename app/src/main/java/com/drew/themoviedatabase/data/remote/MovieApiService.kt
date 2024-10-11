@@ -1,6 +1,6 @@
 package com.drew.themoviedatabase.data.remote
 
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.Movies.MovieDetailsReleaseData
 import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Path

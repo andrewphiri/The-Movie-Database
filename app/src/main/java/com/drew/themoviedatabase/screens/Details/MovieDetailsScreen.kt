@@ -1,6 +1,8 @@
 package com.drew.themoviedatabase.screens.Details
 
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
+import coil.transition.Transition
 import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Utilities.currencyFormatter
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
@@ -66,6 +69,7 @@ import com.drew.themoviedatabase.screens.commonComposeUi.YouTubePlayer
 import com.drew.themoviedatabase.formatDuration
 import com.drew.themoviedatabase.screens.Profile.MyMoviesTVsViewModel
 import com.drew.themoviedatabase.screens.Profile.UserViewModel
+import com.drew.themoviedatabase.screens.commonComposeUi.ShowPhotosDialog
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -104,6 +108,8 @@ fun MovieDetailsScreen(
     val reviews = moviesViewModel.getReviews(movieId).collectAsLazyPagingItems()
     val photos = moviesViewModel.getPhotos(movieId).collectAsLazyPagingItems()
     val certifications by moviesViewModel.certifications.observeAsState()
+    var isPhotosDialogShowing by rememberSaveable { mutableStateOf(false) }
+    var page by rememberSaveable { mutableStateOf(1) }
 
 
     LaunchedEffect(Unit) {
@@ -152,10 +158,20 @@ fun MovieDetailsScreen(
         Box(modifier = Modifier
             .padding(innerPadding)
             .fillMaxSize()) {
+
+
+            AnimatedVisibility(
+                visible = isPhotosDialogShowing,
+            ) {
+                ShowPhotosDialog(
+                    photos = photos.itemSnapshotList.items.map { it.filePath },
+                    onDismiss = { isPhotosDialogShowing = false },
+                    initialPage = page
+                )
+            }
+
             if (isLoading) {
-
                 LoadingSpinner(modifier = Modifier.align(Alignment.Center))
-
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -273,7 +289,11 @@ fun MovieDetailsScreen(
                         item {
                             PhotosList(
                                 photos = photos,
-                                categoryTitle = "Photos"
+                                categoryTitle = "Photos",
+                                onPhotoClick = {
+                                    isPhotosDialogShowing = true
+                                    page = it
+                                }
                             )
                         }
                     }

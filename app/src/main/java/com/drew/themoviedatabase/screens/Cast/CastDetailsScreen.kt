@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.screens.Cast
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +39,7 @@ import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.screens.commonComposeUi.CombinedCreditsMovieList
 import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
 import com.drew.themoviedatabase.screens.commonComposeUi.PhotosList
+import com.drew.themoviedatabase.screens.commonComposeUi.ShowPhotosDialog
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -61,6 +64,8 @@ fun CastDetailsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var isBiographyShowing by remember { mutableStateOf(false) }
     val photos = castViewModel.getPersonImages(personId).collectAsLazyPagingItems()
+    var isPhotosDialogShowing by rememberSaveable { mutableStateOf(false) }
+    var initialPage by rememberSaveable { mutableStateOf(1) }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -85,6 +90,17 @@ fun CastDetailsScreen(
         Box(modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)) {
+
+            AnimatedVisibility(
+                visible = isPhotosDialogShowing,
+            ) {
+                ShowPhotosDialog(
+                    photos = photos.itemSnapshotList.items.map { it.filePath },
+                    onDismiss = { isPhotosDialogShowing = false },
+                    initialPage = initialPage
+                )
+            }
+
             if (isLoading) {
                 LoadingSpinner(modifier = Modifier.align(Alignment.Center))
 
@@ -125,7 +141,11 @@ fun CastDetailsScreen(
                     item {
                         PhotosList(
                             photos = photos,
-                            categoryTitle = "Photos"
+                            categoryTitle = "Photos",
+                            onPhotoClick = {
+                                isPhotosDialogShowing = true
+                                initialPage = it
+                            }
                         )
                     }
                 }

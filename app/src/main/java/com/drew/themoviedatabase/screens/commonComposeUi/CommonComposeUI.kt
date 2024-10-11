@@ -28,10 +28,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -70,10 +73,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.paging.compose.LazyPagingItems
 import coil.compose.AsyncImage
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.Movies.MovieDetailsReleaseData
 import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.data.model.Trailers
+import com.drew.themoviedatabase.data.remote.NetworkClient
 import com.drew.themoviedatabase.formatDuration
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import java.math.RoundingMode
@@ -1363,6 +1367,7 @@ fun PhotosList(
     modifier: Modifier = Modifier,
     photos: LazyPagingItems<com.drew.themoviedatabase.data.model.Photos>?,
     categoryTitle: String,
+    onPhotoClick: (Int) -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -1398,7 +1403,8 @@ fun PhotosList(
                     photos[index]?.let { photo ->
                         PhotosItem(
                             modifier = modifier,
-                            movieImages = photo
+                            movieImages = photo,
+                            onItemClick = { onPhotoClick(index) }
                         )
                     }
                 }
@@ -1412,12 +1418,14 @@ fun PhotosList(
 @Composable
 fun PhotosItem(
     modifier: Modifier = Modifier,
-    movieImages: com.drew.themoviedatabase.data.model.Photos
+    movieImages: com.drew.themoviedatabase.data.model.Photos,
+    onItemClick: () -> Unit
 ) {
     ElevatedCard(
         modifier = modifier
             .height(150.dp)
             .width(120.dp),
+        onClick = onItemClick
     ) {
         AsyncImage(
             model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(movieImages.filePath) ,
@@ -1822,8 +1830,8 @@ fun MovieTVCertifications(
                     .padding(8.dp),
                 text = ratingMeaning,
             )
+        }
     }
-}
 }
 @Composable
 fun VideosPager(
@@ -1873,9 +1881,89 @@ fun VideosPager(
     }
 }
 
+@Composable
+fun PhotosPager(
+    modifier: Modifier = Modifier,
+    photos: List<String?>?,
+    initialPage: Int = 1,
+    onDismiss: () -> Unit
+) {
+    val pagerState = rememberPagerState(initialPage = initialPage) {
+        photos?.size ?: 0
+    }
+        Column(
+            modifier = modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp),
+                    onClick = onDismiss
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close"
+                    )
+                }
+            }
+            HorizontalPager(modifier = Modifier.weight(1f, true), state = pagerState) {
+                AsyncImage(
+                    model = NetworkClient().getPosterUrl(photos?.get(it),"original"),
+                    contentDescription = ""
+                )
+            }
+            Box(
+                modifier = Modifier.weight(0.1f, true)
+                    .fillMaxWidth()
+            ) {
+                Row(
+                    Modifier
+                        .wrapContentHeight()
+                        .fillMaxSize()
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(pagerState.pageCount) { iteration ->
+                        val color = if (pagerState.currentPage == iteration) Color.White else Color.Transparent
+                        val borderColor = if (pagerState.currentPage == iteration) Color.Transparent else Color.LightGray
+                        Box(
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, borderColor, shape = CircleShape)
+                                .background(color)
+                                .size(6.dp)
+                        )
+                    }
+                }
+            }
+        }
+}
+
+@Composable
+fun ShowPhotosDialog(
+    modifier: Modifier = Modifier,
+    onDismiss: () -> Unit,
+    photos: List<String?>?,
+    initialPage: Int = 1) {
+        Dialog(
+            onDismissRequest = onDismiss
+        ) {
+            PhotosPager(
+                modifier = modifier,
+                photos = photos,
+                initialPage = initialPage,
+                onDismiss = onDismiss
+            )
+        }
+}
 /**
  * Composable function to detect scroll position of list
- * This will be used to hide FAB when scrolling down, and to Show BottomAppBar when scrolling up
+ * This will be used to hide BottomAppBar when scrolling down, and to Show BottomAppBar when scrolling up
  */
 @Composable
 fun LazyListState.isScrollingUp(): Boolean {

@@ -2,7 +2,7 @@ package com.drew.themoviedatabase.data.repository.mymoviestv
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.Movies.MovieDetailsReleaseData
 import java.io.IOException
 import javax.inject.Inject
 

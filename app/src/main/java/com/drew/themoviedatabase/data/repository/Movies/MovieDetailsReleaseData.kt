@@ -1,4 +1,4 @@
-package com.drew.themoviedatabase.data.repository
+package com.drew.themoviedatabase.data.repository.Movies
 
 import com.drew.themoviedatabase.data.remote.MovieProvidersResponse
 import com.google.gson.annotations.SerializedName

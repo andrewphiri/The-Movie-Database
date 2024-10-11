@@ -48,7 +48,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.screens.commonComposeUi.PullToRefresh
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.Movies.MovieDetailsReleaseData
 import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.data.model.UserDetails
 import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner

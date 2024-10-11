@@ -12,7 +12,7 @@ import com.drew.themoviedatabase.data.model.Trailers
 import com.drew.themoviedatabase.data.remote.MovieDetailsResponse
 import com.drew.themoviedatabase.data.remote.MovieImagesResponse
 import com.drew.themoviedatabase.data.remote.MultiSearchResult
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.Movies.MovieDetailsReleaseData
 import com.drew.themoviedatabase.data.repository.Movies.MoviePhotosPagingSource
 import com.drew.themoviedatabase.data.repository.Movies.MovieRepository
 import com.drew.themoviedatabase.data.repository.Movies.MoviesReviewsPagingSource

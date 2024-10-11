@@ -1,6 +1,5 @@
 package com.drew.themoviedatabase.data.repository.Movies
 
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
 import com.drew.themoviedatabase.data.remote.MovieApiService

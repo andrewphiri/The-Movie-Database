@@ -7,7 +7,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.drew.themoviedatabase.data.remote.AddedToListResponse
-import com.drew.themoviedatabase.data.repository.MovieDetailsReleaseData
+import com.drew.themoviedatabase.data.repository.Movies.MovieDetailsReleaseData
 import com.drew.themoviedatabase.data.repository.mymoviestv.FavoriteMoviesPagingSource
 import com.drew.themoviedatabase.data.repository.mymoviestv.FavoriteTvPagingSource
 import com.drew.themoviedatabase.data.repository.mymoviestv.MoviesWatchlistPagingSource
