@@ -2,8 +2,8 @@ package com.drew.themoviedatabase.dependencyInjection
 
 import android.content.Context
 import androidx.room.Room
-import com.drew.themoviedatabase.data.room.UserDao
-import com.drew.themoviedatabase.data.room.UserDatabase
+import com.drew.themoviedatabase.data.room.MoviesShowsDao
+import com.drew.themoviedatabase.data.room.MoviesShowsDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,15 +14,15 @@ import dagger.hilt.components.SingletonComponent
 @Module
 object DatabaseModule {
     @Provides
-    fun provideUserDao(userDatabase: UserDatabase): UserDao {
-        return userDatabase.userDao()
+    fun provideUserDao(moviesShowsDatabase: MoviesShowsDatabase): MoviesShowsDao {
+        return moviesShowsDatabase.moviesShowsDao()
     }
 
     @Provides
-    fun provideDatabase(@ApplicationContext context: Context): UserDatabase {
+    fun provideDatabase(@ApplicationContext context: Context): MoviesShowsDatabase {
         return Room.databaseBuilder(
             context,
-            UserDatabase::class.java,
+            MoviesShowsDatabase::class.java,
             "user_database"
         ).fallbackToDestructiveMigration()
             .build()

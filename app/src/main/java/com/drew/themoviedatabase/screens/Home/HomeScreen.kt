@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.screens.Home
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -32,17 +35,29 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.drew.themoviedatabase.data.model.MyFavoriteMovies
+import com.drew.themoviedatabase.data.model.MyFavoriteTVShows
+import com.drew.themoviedatabase.data.model.MyRatedMovies
+import com.drew.themoviedatabase.data.model.MyRatedTVShows
+import com.drew.themoviedatabase.data.model.MyWatchlistMovies
+import com.drew.themoviedatabase.data.model.MyWatchlistTVShows
 import com.drew.themoviedatabase.screens.commonComposeUi.PullToRefresh
 import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
 import com.drew.themoviedatabase.screens.commonComposeUi.PopularPeopleList
 import com.drew.themoviedatabase.screens.commonComposeUi.TVShowList
 import com.drew.themoviedatabase.data.remote.MultiSearchResult
 import com.drew.themoviedatabase.screens.Cast.CastViewModel
+import com.drew.themoviedatabase.screens.Details.MoviesShowsViewModel
+import com.drew.themoviedatabase.screens.Profile.MyMoviesTVsViewModel
+import com.drew.themoviedatabase.screens.Profile.UserViewModel
 import com.drew.themoviedatabase.screens.Search.CastCardSearchItem
 import com.drew.themoviedatabase.screens.Search.MovieItemSearch
 import com.drew.themoviedatabase.screens.Search.TVShowItemsSearch
 import com.drew.themoviedatabase.screens.commonComposeUi.MovieList
 import com.drew.themoviedatabase.ui.theme.DarkOrange
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -53,7 +68,10 @@ object HomeScreen
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    userViewModel: UserViewModel = hiltViewModel(),
+    moviesShowsViewModel: MoviesShowsViewModel = hiltViewModel(),
     moviesViewModel: HomeMoviesViewModel = hiltViewModel(),
+    moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
     tvShowsViewModel: HomeTVViewModel = hiltViewModel(),
     castViewModel: CastViewModel = hiltViewModel(),
     navigateToMovieDetails: (Int) -> Unit,
@@ -61,12 +79,14 @@ fun HomeScreen(
     navigateToCastDetailsScreen: (Int) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val user by userViewModel.getUser.collectAsState(initial = null)
     // Loading state
     var isLoading by rememberSaveable { mutableStateOf(true) }
     val isRefreshing by moviesViewModel.isRefreshing.observeAsState(false)
+    var sessionID by rememberSaveable { mutableStateOf<String?>(null) }
+    var accountID by rememberSaveable { mutableStateOf<Int>(21411766) }
 
-
-    val moviesPopular  = moviesViewModel.moviesPopular.collectAsLazyPagingItems()
+    val moviesPopular = moviesViewModel.moviesPopular.collectAsLazyPagingItems()
     val moviesTopRated = moviesViewModel.moviesTopRated.collectAsLazyPagingItems()
     val moviesNowPlaying = moviesViewModel.moviesNowPlaying.collectAsLazyPagingItems()
     val moviesUpcoming = moviesViewModel.moviesUpcoming.collectAsLazyPagingItems()
@@ -79,6 +99,166 @@ fun HomeScreen(
     val tvShowsOnTheAirTVShows = tvShowsViewModel.tvShowsOnTheAir.collectAsLazyPagingItems()
 
     val popularPeople = castViewModel.popularPeople.collectAsLazyPagingItems()
+
+    //My movies and TV Shows
+    val favoriteMovies by moviesTVsViewModel.favMovies.observeAsState()
+    val favoriteTVShows by moviesTVsViewModel.favTVShows.observeAsState()
+    val ratedMovies by moviesTVsViewModel.ratedMovies.observeAsState()
+    val ratedTVShows by moviesTVsViewModel.ratedTVShows.observeAsState()
+    val watchlistMovies by moviesTVsViewModel.watchlistMovies.observeAsState()
+    val watchlistTVShows by moviesTVsViewModel.watchlistTVShows.observeAsState()
+
+    //My movies and TV shows in room
+    val myFavMovies = moviesShowsViewModel.getFavoriteMovies.collectAsState(initial = emptyList())
+    val myFavTVShows = moviesShowsViewModel.getFavoriteTVShows.collectAsState(initial = emptyList())
+    val myRatedRoomMovies =
+        moviesShowsViewModel.getRatedMovies.collectAsState(initial = emptyList())
+    val myRatedRoomTVShows =
+        moviesShowsViewModel.getRatedTVShows.collectAsState(initial = emptyList())
+    val myWatchlistRoomMovies =
+        moviesShowsViewModel.getWatchlistMovies.collectAsState(initial = emptyList())
+    val myWatchlistRoomTVShows =
+        moviesShowsViewModel.getWatchlistTVShows.collectAsState(initial = emptyList())
+
+    LaunchedEffect(user) {
+        if (user != null) {
+
+            accountID = user?.accountId ?: 21411766
+            sessionID = user?.sessionId
+//            Log.d("PROFILE_SCREEN", "Account ID: $accountID")
+//            Log.d("PROFILE_SCREEN", "Session ID: $sessionID")
+            coroutineScope.launch {
+                val deferreds = listOf(
+                    async { moviesTVsViewModel.fetchMyFavoriteMovies(accountID, sessionID) },
+                    async { moviesTVsViewModel.fetchMyFavoriteShows(accountID, sessionID) },
+                    async { moviesTVsViewModel.fetchMyRatedMovies(accountID, sessionID) },
+                    async { moviesTVsViewModel.fetchMyRatedTVShows(accountID, sessionID) },
+                    async { moviesTVsViewModel.fetchMyWatchlistMovies(accountID, sessionID) },
+                    async { moviesTVsViewModel.fetchMyWatchlistTVShows(accountID, sessionID) }
+                )
+
+                try {
+                    deferreds.awaitAll()
+                    //Log.d("favoriteMovies", "HomeScreen: $favoriteMovies")
+                } catch (e: Exception) {
+                    // Handle error, e.g., log, show error message
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+        if (user != null) {
+            try {
+            favoriteMovies?.let { movies ->
+                val newMovies = movies.filterNot { movie ->
+                    myFavMovies.value.any { it.movieId == movie?.id }
+                }
+                if (newMovies.isNotEmpty()) {
+                    moviesShowsViewModel.insertFavoriteMovies(
+                        newMovies.mapNotNull { movie ->
+                            MyFavoriteMovies(
+                                movieId = movie?.id,
+                                movieTitle = movie?.title,
+                                moviePoster = movie?.posterPath
+                            )
+                        }
+                    )
+                }
+            }
+
+            favoriteTVShows?.let { shows ->
+                val newShows = shows.filterNot { show ->
+                    myFavTVShows.value.any { it.seriesId == show?.id }
+                }
+                if (newShows.isNotEmpty()) {
+                    moviesShowsViewModel.insertFavoriteTVShows(
+                        newShows.mapNotNull { show ->
+                            MyFavoriteTVShows(
+                                seriesId = show?.id,
+                                seriesTitle = show?.name,
+                                seriesPoster = show?.posterPath
+                            )
+                        }
+                    )
+                }
+            }
+
+            watchlistMovies?.let { movies ->
+                val newMovies = movies.filterNot { movie ->
+                    myWatchlistRoomMovies.value.any { it.movieId == movie?.id }
+                }
+                if (newMovies.isNotEmpty()) {
+                    moviesShowsViewModel.insertWatchlistMovies(
+                        newMovies.mapNotNull { movie ->
+                            MyWatchlistMovies(
+                                movieId = movie?.id,
+                                movieTitle = movie?.title,
+                                moviePoster = movie?.posterPath
+                            )
+                        }
+                    )
+                }
+            }
+
+            watchlistTVShows?.let { shows ->
+                val newShows = shows.filterNot { show ->
+                    myWatchlistRoomTVShows.value.any { it.seriesId == show?.id }
+                }
+                if (newShows.isNotEmpty()) {
+                    moviesShowsViewModel.insertWatchlistTVShows(
+                        newShows.mapNotNull { show ->
+                            MyWatchlistTVShows(
+                                seriesId = show?.id,
+                                seriesTitle = show?.name,
+                                seriesPoster = show?.posterPath
+                            )
+                        }
+                    )
+                }
+            }
+
+            ratedMovies?.let { movies ->
+                val newMovies = movies.filterNot { movie ->
+                    myRatedRoomMovies.value.any { it.movieId == movie?.id }
+                }
+                if (newMovies.isNotEmpty()) {
+                    moviesShowsViewModel.insertRatedMovies(
+                        newMovies.mapNotNull { movie ->
+                            MyRatedMovies(
+                                movieId = movie?.id,
+                                movieTitle = movie?.title,
+                                moviePoster = movie?.posterPath
+                            )
+                        }
+                    )
+                }
+            }
+
+            ratedTVShows?.let { shows ->
+                val newShows = shows.filterNot { show ->
+                    myRatedRoomTVShows.value.any { it.seriesId == show?.id }
+                }
+                if (newShows.isNotEmpty()) {
+                    moviesShowsViewModel.insertRatedTVShows(
+                        newShows.mapNotNull { show ->
+                            MyRatedTVShows(
+                                seriesId = show?.id,
+                                seriesTitle = show?.name,
+                                seriesPoster = show?.posterPath
+                            )
+                        }
+                    )
+                }
+            }
+
+        } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+
+    //Log.d("favoriteMovies", "HomeScreenOut: $favoriteMovies")
 
     if(
         moviesPopular.loadState.refresh is LoadState.NotLoading

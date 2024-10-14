@@ -34,6 +34,13 @@ interface MyAccountApiService {
         @Query("language") language: String,
         @Query("page") page: Int = 1): Call<MovieResponse?>?
 
+    @GET("account/{account_id}/favorite/movies")
+    fun getMyFavoriteMoviesTotalPages(
+        @Path("account_id") accountId: Int = 21411766,
+        @Query("api_key") apiKey: String,
+        @Query("session_id") sessionId: String?,
+        @Query("language") language: String): Call<TotalPages?>?
+
     @GET("account/{account_id}/favorite/tv")
     fun getMyFavoriteTV(
         @Path("account_id") accountId: Int = 21411766,
@@ -41,6 +48,13 @@ interface MyAccountApiService {
         @Query("session_id") sessionId: String?,
         @Query("language") language: String,
         @Query("page") page: Int = 1): Call<TVShowsResponse?>?
+
+    @GET("account/{account_id}/favorite/tv")
+    fun getMyFavoriteTVTotalPages(
+        @Path("account_id") accountId: Int = 21411766,
+        @Query("api_key") apiKey: String,
+        @Query("session_id") sessionId: String?,
+        @Query("language") language: String): Call<TotalPages?>?
 
     @GET("account/{account_id}/rated/movies")
     fun getMyRatedMovies(
@@ -50,6 +64,13 @@ interface MyAccountApiService {
         @Query("language") language: String,
         @Query("page") page: Int = 1): Call<MovieResponse?>?
 
+    @GET("account/{account_id}/rated/movies")
+    fun getMyRatedMoviesTotalPages(
+        @Path("account_id") accountId: Int = 21411766,
+        @Query("api_key") apiKey: String,
+        @Query("session_id") sessionId: String?,
+        @Query("language") language: String): Call<TotalPages?>?
+
     @GET("account/{account_id}/rated/tv")
     fun getMyRatedTV(
         @Path("account_id") accountId: Int = 21411766,
@@ -57,6 +78,13 @@ interface MyAccountApiService {
         @Query("session_id") sessionId: String?,
         @Query("language") language: String,
         @Query("page") page: Int = 1): Call<TVShowsResponse?>?
+
+    @GET("account/{account_id}/rated/tv")
+    fun getMyRatedTVTotalPages(
+        @Path("account_id") accountId: Int = 21411766,
+        @Query("api_key") apiKey: String,
+        @Query("session_id") sessionId: String?,
+        @Query("language") language: String): Call<TotalPages?>?
 
     @GET("account/{account_id}/watchlist/movies")
     fun getMyWatchListMovies(
@@ -66,6 +94,13 @@ interface MyAccountApiService {
         @Query("language") language: String,
         @Query("page") page: Int = 1): Call<MovieResponse?>?
 
+    @GET("account/{account_id}/watchlist/movies")
+    fun getMyWatchListMoviesTotalPages(
+        @Path("account_id") accountId: Int = 21411766,
+        @Query("api_key") apiKey: String,
+        @Query("session_id") sessionId: String?,
+        @Query("language") language: String): Call<TotalPages?>?
+
     @GET("account/{account_id}/watchlist/tv")
     fun getMyWatchlistTV(
         @Path("account_id") accountId: Int = 21411766,
@@ -73,6 +108,13 @@ interface MyAccountApiService {
         @Query("session_id") sessionId: String?,
         @Query("language") language: String,
         @Query("page") page: Int = 1): Call<TVShowsResponse?>?
+
+    @GET("account/{account_id}/watchlist/tv")
+    fun getMyWatchlistTVTotalPages(
+        @Path("account_id") accountId: Int = 21411766,
+        @Query("api_key") apiKey: String,
+        @Query("session_id") sessionId: String?,
+        @Query("language") language: String): Call<TotalPages?>?
 
     @POST("account/{account_id}/favorite")
     fun addFavorite(

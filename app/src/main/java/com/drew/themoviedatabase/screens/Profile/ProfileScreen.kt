@@ -101,7 +101,7 @@ fun ProfileScreen(
         //Log.i("LAUNCHER_RESULT", it.data?.data.toString())
     }
 
-   Log.d("PROFILE_SCREEN", "User: $user")
+   //Log.d("PROFILE_SCREEN", "User: $user")
     if (user != null) {
         loadingMessage = "Loading..."
         isLoading = true
@@ -115,7 +115,7 @@ fun ProfileScreen(
             val myProfile = async { loginViewModel.getAccountID(sessionID ?: "") }.await()
             if (myProfile == null && user != null) {
 
-                Log.d("PROFILE_SCREEN", "My Profile: $myProfile")
+                //Log.d("PROFILE_SCREEN", "My Profile: $myProfile")
                 if (myProfile != null) {
 
                 }

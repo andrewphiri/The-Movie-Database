@@ -2,7 +2,6 @@ package com.drew.themoviedatabase.screens.Details
 
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,11 +47,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
-import coil.transition.Transition
 import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Utilities.currencyFormatter
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.Utilities.getWatchRegion
+import com.drew.themoviedatabase.data.model.MyFavoriteMovies
+import com.drew.themoviedatabase.data.model.MyWatchlistMovies
 import com.drew.themoviedatabase.data.model.Trailers
 import com.drew.themoviedatabase.data.remote.MovieDetailsResponse
 import com.drew.themoviedatabase.screens.commonComposeUi.CastList
@@ -92,7 +92,8 @@ fun MovieDetailsScreen(
     navigateToReviews: (Int) -> Unit,
     navigateToTrailers: (Int) -> Unit,
     moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
-    userViewModel: UserViewModel = hiltViewModel()
+    userViewModel: UserViewModel = hiltViewModel(),
+    moviesShowsViewModel: MoviesShowsViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -109,7 +110,15 @@ fun MovieDetailsScreen(
     val photos = moviesViewModel.getPhotos(movieId).collectAsLazyPagingItems()
     val certifications by moviesViewModel.certifications.observeAsState()
     var isPhotosDialogShowing by rememberSaveable { mutableStateOf(false) }
-    var page by rememberSaveable { mutableStateOf(1) }
+    var initialPage by rememberSaveable { mutableStateOf(1) }
+
+    //My movies and TV shows in room
+    val myFavMovies = moviesShowsViewModel.getFavoriteMovies.collectAsState(initial = emptyList())
+    val myRatedRoomMovies = moviesShowsViewModel.getRatedMovies.collectAsState(initial = emptyList())
+    val myWatchlistRoomMovies = moviesShowsViewModel.getWatchlistMovies.collectAsState(initial = emptyList())
+
+    isFavorite = myFavMovies.value.any { it.movieId == movieId }
+    isAddedToWatchlist = myWatchlistRoomMovies.value.any { it.movieId == movieId }
 
 
     LaunchedEffect(Unit) {
@@ -166,7 +175,7 @@ fun MovieDetailsScreen(
                 ShowPhotosDialog(
                     photos = photos.itemSnapshotList.items.map { it.filePath },
                     onDismiss = { isPhotosDialogShowing = false },
-                    initialPage = page
+                    initialPage = initialPage
                 )
             }
 
@@ -220,6 +229,18 @@ fun MovieDetailsScreen(
                                             sessionId = user?.sessionId,
                                             addToList = !isFavorite
                                         )
+
+                                        if (isFavorite) {
+                                            moviesShowsViewModel.deleteFavoriteMovie(movieId)
+                                        } else {
+                                            moviesShowsViewModel.insertFavoriteMovie(
+                                                MyFavoriteMovies(
+                                                    movieId = movieId,
+                                                    movieTitle = movieDetails?.title ?: "",
+                                                    moviePoster = movieDetails?.posterPath ?: ""
+                                                )
+                                            )
+                                        }
                                         //Log.d("addToFavorites", "MovieDetailsScreen: $addedToListResponse")
                                         if (addedToListResponse?.success == true) {
                                             isFavorite = !isFavorite
@@ -240,6 +261,18 @@ fun MovieDetailsScreen(
                                             sessionId = user?.sessionId,
                                             addToList = !isAddedToWatchlist
                                         )
+
+                                        if (isAddedToWatchlist) {
+                                            moviesShowsViewModel.deleteWatchlistMovie(movieId)
+                                        } else {
+                                            moviesShowsViewModel.insertWatchlistMovie(
+                                                MyWatchlistMovies(
+                                                    movieId = movieId,
+                                                    movieTitle = movieDetails?.title ?: "",
+                                                    moviePoster = movieDetails?.posterPath ?: ""
+                                                )
+                                            )
+                                        }
                                         //Log.d("addToWatchlist", "MovieDetailsScreen: $addedToListResponse")
                                         if (addedToListResponse?.success == true) {
                                             isAddedToWatchlist = !isAddedToWatchlist
@@ -292,7 +325,7 @@ fun MovieDetailsScreen(
                                 categoryTitle = "Photos",
                                 onPhotoClick = {
                                     isPhotosDialogShowing = true
-                                    page = it
+                                    initialPage = it
                                 }
                             )
                         }

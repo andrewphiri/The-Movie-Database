@@ -1,20 +1,20 @@
 package com.drew.themoviedatabase.data.repository
 
 import com.drew.themoviedatabase.data.model.UserDetails
-import com.drew.themoviedatabase.data.room.UserDao
+import com.drew.themoviedatabase.data.room.MoviesShowsDao
 import javax.inject.Inject
 
 class UserRepository @Inject constructor(
-    private val userDao: UserDao
+    private val moviesShowsDao: MoviesShowsDao
 ) {
     suspend fun insert(userDetails: UserDetails) {
-        userDao.insert(userDetails)
+        moviesShowsDao.insertUser(userDetails)
     }
     suspend fun delete(userDetails: UserDetails) {
-        userDao.delete(userDetails)
+        moviesShowsDao.deleteUser(userDetails)
     }
     suspend fun update(userDetails: UserDetails) {
-        userDao.update(userDetails)
+        moviesShowsDao.updateUser(userDetails)
     }
-    fun getUser() = userDao.getUser()
+    fun getUser() = moviesShowsDao.getUser()
 }

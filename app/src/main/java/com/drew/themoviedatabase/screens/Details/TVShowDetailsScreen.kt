@@ -50,6 +50,8 @@ import coil.compose.AsyncImage
 import com.drew.themoviedatabase.MovieTopAppBar
 import com.drew.themoviedatabase.Utilities.findPreferredVideo
 import com.drew.themoviedatabase.Utilities.getWatchRegion
+import com.drew.themoviedatabase.data.model.MyFavoriteTVShows
+import com.drew.themoviedatabase.data.model.MyWatchlistTVShows
 import com.drew.themoviedatabase.data.model.Trailers
 import com.drew.themoviedatabase.data.remote.TVShowDetailsWithCastAndVideos
 import com.drew.themoviedatabase.screens.commonComposeUi.CastList
@@ -89,7 +91,8 @@ fun TVDetailsScreen(
     navigateToReviews: (Int) -> Unit,
     navigateToTrailers: (Int) -> Unit,
     userViewModel: UserViewModel = hiltViewModel(),
-    moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel()
+    moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
+    moviesShowsViewModel: MoviesShowsViewModel = hiltViewModel()
 ) {
 
     val coroutineScope = rememberCoroutineScope()
@@ -120,6 +123,14 @@ fun TVDetailsScreen(
     val certifications by tvShowsViewModel.certifications.observeAsState()
     var isPhotosDialogShowing by rememberSaveable { mutableStateOf(false) }
     var initialPage by rememberSaveable { mutableStateOf(1) }
+
+    //My TV shows in room
+    val myFavTVShows = moviesShowsViewModel.getFavoriteTVShows.collectAsState(initial = emptyList())
+    val myRatedRoomTVShows = moviesShowsViewModel.getRatedTVShows.collectAsState(initial = emptyList())
+    val myWatchlistRoomTVShows = moviesShowsViewModel.getWatchlistTVShows.collectAsState(initial = emptyList())
+
+    isFavorite = myFavTVShows.value.any { it.seriesId == seriesId }
+    isAddedToWatchlist = myWatchlistRoomTVShows.value.any { it.seriesId == seriesId }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
@@ -232,6 +243,17 @@ fun TVDetailsScreen(
                                             sessionId = user?.sessionId,
                                             addToList = !isFavorite
                                         )
+
+                                        if (isFavorite) {
+                                            moviesShowsViewModel.deleteFavoriteTVShow(seriesId)
+                                        } else {
+                                            moviesShowsViewModel.insertFavoriteTVShow(
+                                                MyFavoriteTVShows(
+                                                    seriesId = seriesId,
+                                                    seriesTitle = tvDetails?.name ?: "",
+                                                    seriesPoster = tvDetails?.posterPath ?: ""
+                                                ))
+                                        }
                                         if (addedToListResponse?.success == true) {
                                             isFavorite = !isFavorite
                                         }
@@ -250,6 +272,17 @@ fun TVDetailsScreen(
                                             sessionId = user?.sessionId,
                                             addToList = !isAddedToWatchlist
                                         )
+
+                                        if (isAddedToWatchlist) {
+                                            moviesShowsViewModel.deleteWatchlistTVShow(seriesId)
+                                        } else {
+                                            moviesShowsViewModel.insertWatchlistTVShow(
+                                                MyWatchlistTVShows(
+                                                    seriesId = seriesId,
+                                                    seriesTitle = tvDetails?.name ?: "",
+                                                    seriesPoster = tvDetails?.posterPath ?: ""
+                                                ))
+                                        }
                                         if (addedToListResponse?.success == true) {
                                             isAddedToWatchlist = !isAddedToWatchlist
                                         }

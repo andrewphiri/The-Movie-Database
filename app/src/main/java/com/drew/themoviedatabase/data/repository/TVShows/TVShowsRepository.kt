@@ -24,7 +24,6 @@ import javax.inject.Inject
 class TVShowsRepository@Inject constructor(
     val tvShowApiService: TVShowApiService
 ) {
-
     private fun fetchTVShows(
         pages: Int,
         apiCall: suspend (Int) -> Response<TVShowsResponse?>?,

@@ -496,26 +496,26 @@ class MovieRepository @Inject constructor(
 
     suspend fun getMoviePhotos(movieId: Int) : List<com.drew.themoviedatabase.data.model.Photos?>? {
         return try {
-            coroutineScope {
-                withContext(Dispatchers.IO) {
-                    try {
-                      val response = movieApiService.getMovieImages(
-                            movieId = movieId,
-                            apiKey = com.drew.themoviedatabase.data.remote.API_KEY,
-                            imageLanguage = imageLanguage,
-                            language = defaultLocale()
-                        )?.execute()
-                        if (response?.isSuccessful == true) {
-                            response.body()?.getAllImages()
-                        } else {
-                            emptyList()
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+        coroutineScope {
+            withContext(Dispatchers.IO) {
+                try {
+                  val response = movieApiService.getMovieImages(
+                        movieId = movieId,
+                        apiKey = com.drew.themoviedatabase.data.remote.API_KEY,
+                        imageLanguage = imageLanguage,
+                        language = defaultLocale()
+                    )?.execute()
+                    if (response?.isSuccessful == true) {
+                        response.body()?.getAllImages()
+                    } else {
                         emptyList()
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    emptyList()
                 }
             }
+        }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
