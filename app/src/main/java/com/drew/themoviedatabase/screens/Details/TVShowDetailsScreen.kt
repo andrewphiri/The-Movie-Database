@@ -14,7 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -53,6 +56,7 @@ import com.drew.themoviedatabase.Utilities.getWatchRegion
 import com.drew.themoviedatabase.data.model.MyFavoriteTVShows
 import com.drew.themoviedatabase.data.model.MyWatchlistTVShows
 import com.drew.themoviedatabase.data.model.Trailers
+import com.drew.themoviedatabase.data.remote.NetworkClient
 import com.drew.themoviedatabase.data.remote.TVShowDetailsWithCastAndVideos
 import com.drew.themoviedatabase.screens.commonComposeUi.CastList
 import com.drew.themoviedatabase.screens.commonComposeUi.GenreList
@@ -88,15 +92,14 @@ fun TVDetailsScreen(
     navigateToTVShowDetails: (Int) -> Unit = {},
     tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
-    navigateToReviews: (Int) -> Unit,
     navigateToTrailers: (Int) -> Unit,
+    navigateToSeasonsScreen: (String,Int, Int) -> Unit,
     userViewModel: UserViewModel = hiltViewModel(),
     moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
     moviesShowsViewModel: MoviesShowsViewModel = hiltViewModel()
 ) {
 
     val coroutineScope = rememberCoroutineScope()
-    val lifecycleOwner = LocalLifecycleOwner.current
     val user by userViewModel.getUser.collectAsState(initial = null)
 //    val favoriteTvShows = moviesTVsViewModel.getMyFavoriteTVShows(
 //        user?.id ?: 0,
@@ -202,7 +205,8 @@ fun TVDetailsScreen(
                             tvShow = tvDetails,
                             trailers = tvDetails?.videos?.getResults(),
                             isTrailersEmpty = isTrailersEmpty,
-                            navigateToTrailers = { navigateToTrailers(seriesId) }
+                            navigateToTrailers = { navigateToTrailers(seriesId) },
+                            navigateToSeasons = navigateToSeasonsScreen
                         )
                     }
 
@@ -325,7 +329,6 @@ fun TVDetailsScreen(
                             ReviewList(
                                 reviews = reviews,
                                 categoryTitle = "Reviews",
-                                onItemClick = { navigateToReviews(seriesId) }
                             )
                         }
                     }
@@ -363,7 +366,8 @@ fun TVDetailsCard(
     tvShow: TVShowDetailsWithCastAndVideos?,
     trailers: List<Trailers?>?,
     isTrailersEmpty: Boolean = false,
-    navigateToTrailers: () -> Unit
+    navigateToTrailers: () -> Unit,
+    navigateToSeasons: (String,Int, Int) -> Unit
 ) {
     val ageRate = tvShow?.contentRatings
         ?.results?.find { it.iso31661 == "US" }?.rating ?: ""
@@ -432,21 +436,48 @@ fun TVDetailsCard(
             }
         }
 
-        if (!isTrailersEmpty) {
+
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
+
+                Row(
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp)
+                        .align(Alignment.TopStart)
+                        .padding(start = 8.dp)
+                        .clickable { navigateToSeasons(tvShow?.name ?: "",tvShow?.id ?: 0, tvShow?.numberOfSeasons ?: 0) },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "See all seasons",
+                        color = Color.Cyan,
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "See all seasons",
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 8.dp)
                         .clickable { navigateToTrailers() },
-                    text = "See more videos",
-                    color = Color.Cyan,
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "See more videos",
+                        color = Color.Cyan,
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "See more videos",
+                    )
+                }
             }
-        }
+
 
         Row(
             modifier = Modifier
@@ -459,7 +490,7 @@ fun TVDetailsCard(
                 modifier = Modifier
                     .height(175.dp)
                     .width(100.dp),
-                model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(tvShow?.posterPath),
+                model = NetworkClient().getPosterUrl(tvShow?.posterPath),
                 contentDescription = "${tvShow?.name} poster",
                 placeholder = null
             )

@@ -15,7 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -89,7 +93,6 @@ fun MovieDetailsScreen(
     navigateToDetails: (Int) -> Unit = {},
     moviesViewModel: MoviesViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
-    navigateToReviews: (Int) -> Unit,
     navigateToTrailers: (Int) -> Unit,
     moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel(),
@@ -313,7 +316,6 @@ fun MovieDetailsScreen(
                             ReviewList(
                                 reviews = reviews,
                                 categoryTitle = "Reviews",
-                                onItemClick = { navigateToReviews(movieId) }
                             )
                         }
                     }
@@ -414,22 +416,28 @@ fun MovieDetailsCard(
                 )
             }
         }
-        if (!isTrailersEmpty) {
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                Text(
+                Row(
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(end = 8.dp)
                         .clickable { navigateToTrailers() },
-                    text = "See more videos",
-                    color = Color.Cyan,
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "See more videos",
+                        color = Color.Cyan,
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "See more videos",
+                    )
+                }
             }
-        }
-
 
 
         Row(

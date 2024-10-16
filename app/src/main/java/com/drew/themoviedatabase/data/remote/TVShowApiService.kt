@@ -101,12 +101,12 @@ interface TVShowApiService {
         @Query("language") language: String,
         @Query("api_key") apiKey: String?): Call<TVProvidersResponse?>?
 
-    @GET("{series_id}/season/{season_number}")
+    @GET("tv/{series_id}/season/{season_number}")
     fun getSeasonDetails(
         @Path("series_id") tvShowId: Int,
         @Path("season_number") seasonNumber: Int,
         @Query("language") language: String,
-        @Query("api_key") apiKey: String?): Call<com.drew.themoviedatabase.data.model.SeasonResponse?>?
+        @Query("api_key") apiKey: String?): Call<SeasonResponse?>?
 
     @GET("/tv/{series_id}/season/{season_number}/credits")
     fun getSeasonCast(

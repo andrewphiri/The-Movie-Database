@@ -2,8 +2,10 @@ package com.drew.themoviedatabase.data.repository.TVShows
 
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
+import com.drew.themoviedatabase.data.remote.API_KEY
 import com.drew.themoviedatabase.data.remote.MovieImagesResponse
 import com.drew.themoviedatabase.data.remote.ReviewsResponse
+import com.drew.themoviedatabase.data.remote.SeasonResponse
 import com.drew.themoviedatabase.data.remote.TVShowApiService
 import com.drew.themoviedatabase.data.remote.TVShowDetailsWithCastAndVideos
 import com.drew.themoviedatabase.data.remote.TVShowsResponse
@@ -101,7 +103,7 @@ class TVShowsRepository@Inject constructor(
                         async(Dispatchers.IO) {
                             try {
                                 val response = tvShowApiService.getTVShowDetailsWithContentRatings(
-                                    movie?.id, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())?.execute()
+                                    movie?.id, apiKey = API_KEY, language = defaultLocale())?.execute()
 
                                 if (response?.isSuccessful == true) {
                                     response.body()
@@ -139,7 +141,7 @@ class TVShowsRepository@Inject constructor(
                         val jobs = tvShows.map { tvShow ->
                             async {
                                 try {
-                                    val response = tvShowApiService.getTVShowDetailsWithContentRatings(tvShow.id, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())?.execute()
+                                    val response = tvShowApiService.getTVShowDetailsWithContentRatings(tvShow.id, apiKey = API_KEY, language = defaultLocale())?.execute()
 
                                     if (response?.isSuccessful == true) {
                                         response.body()
@@ -173,7 +175,7 @@ class TVShowsRepository@Inject constructor(
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page = page)?.execute() },
+                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = API_KEY, language = defaultLocale(), page = page)?.execute() },
                 callback = callback,
             )
         } catch (e: Exception) {
@@ -185,7 +187,7 @@ class TVShowsRepository@Inject constructor(
        return try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page = page)?.execute() },
+                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = API_KEY, language = defaultLocale(), page = page)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -197,7 +199,7 @@ class TVShowsRepository@Inject constructor(
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback
             )
         } catch (e: Exception) {
@@ -209,7 +211,7 @@ class TVShowsRepository@Inject constructor(
        return try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -221,7 +223,7 @@ class TVShowsRepository@Inject constructor(
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback,
             )
         } catch (e: Exception) {
@@ -234,7 +236,7 @@ class TVShowsRepository@Inject constructor(
         return try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -246,7 +248,7 @@ class TVShowsRepository@Inject constructor(
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback,
             )
         } catch (e : Exception) {
@@ -258,7 +260,7 @@ class TVShowsRepository@Inject constructor(
        return try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
             )
         } catch (e : Exception) {
             e.printStackTrace()
@@ -270,7 +272,7 @@ class TVShowsRepository@Inject constructor(
         try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
                 callback = callback)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -281,7 +283,7 @@ class TVShowsRepository@Inject constructor(
         return try {
             fetchTVShowDetails(
                 pages = pages,
-                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },)
+                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -290,7 +292,7 @@ class TVShowsRepository@Inject constructor(
 
     fun getTVShowReviews(seriesId: Int, callback: (Response<ReviewsResponse?>) -> Unit) {
             try {
-                tvShowApiService.getTVShowReviews(seriesId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page = 1)?.enqueue(object : Callback<ReviewsResponse?> {
+                tvShowApiService.getTVShowReviews(seriesId, apiKey = API_KEY, language = defaultLocale(), page = 1)?.enqueue(object : Callback<ReviewsResponse?> {
                     override fun onResponse(
                         p0: Call<ReviewsResponse?>,
                         p1: Response<ReviewsResponse?>
@@ -311,11 +313,35 @@ class TVShowsRepository@Inject constructor(
             }
     }
 
+    fun getSeasonsDetails(seriesId: Int, seasonNumber: Int, callback: (Response<SeasonResponse?>?) -> Unit) {
+        try {
+            tvShowApiService.getSeasonDetails(
+                seriesId,
+                seasonNumber,
+                apiKey = API_KEY,
+                language = defaultLocale()
+            )?.enqueue(object : Callback<SeasonResponse?> {
+                override fun onResponse(p0: Call<SeasonResponse?>, p1: Response<SeasonResponse?>) {
+                    if (p1.isSuccessful) {
+                        callback(p1)
+                    }
+                }
+
+                override fun onFailure(p0: Call<SeasonResponse?>, p1: Throwable) {
+                    callback(Response.success(null))
+                }
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            callback(Response.success(null))
+        }
+    }
+
     fun getTvShowPhotos(movieId: Int, callback: (Response<MovieImagesResponse?>) -> Unit) {
         try {
             tvShowApiService.getTVShowImages(
                 movieId = movieId,
-                apiKey = com.drew.themoviedatabase.data.remote.API_KEY,
+                apiKey = API_KEY,
                 imageLanguage = imageLanguage,
                 language = defaultLocale())?.enqueue(object : Callback<MovieImagesResponse?> {
                 override fun onResponse(
@@ -343,7 +369,7 @@ class TVShowsRepository@Inject constructor(
                     try {
                         val response = tvShowApiService.getTVShowImages(
                             movieId = seriesId,
-                            apiKey = com.drew.themoviedatabase.data.remote.API_KEY,
+                            apiKey = API_KEY,
                             imageLanguage = imageLanguage,
                             language = defaultLocale()
                         )?.execute()
@@ -367,7 +393,7 @@ class TVShowsRepository@Inject constructor(
     fun fetchCertifications(callback: (Response<com.drew.themoviedatabase.data.model.Certifications?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                tvShowApiService.getCertifications(apiKey = com.drew.themoviedatabase.data.remote.API_KEY)?.enqueue(object : Callback<com.drew.themoviedatabase.data.model.Certifications?> {
+                tvShowApiService.getCertifications(apiKey = API_KEY)?.enqueue(object : Callback<com.drew.themoviedatabase.data.model.Certifications?> {
                     override fun onResponse(
                         p0: Call<com.drew.themoviedatabase.data.model.Certifications?>,
                         p1: Response<com.drew.themoviedatabase.data.model.Certifications?>
@@ -390,7 +416,7 @@ class TVShowsRepository@Inject constructor(
     fun fetchTrailers(seriesId: Int, callback: (Response<TrailersResponse?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                tvShowApiService.getTVShowTrailer(seriesId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())?.enqueue(object :
+                tvShowApiService.getTVShowTrailer(seriesId, apiKey = API_KEY, language = defaultLocale())?.enqueue(object :
                     Callback<TrailersResponse?> {
                     override fun onResponse(
                         p0: Call<TrailersResponse?>,
@@ -435,7 +461,7 @@ class TVShowsRepository@Inject constructor(
         return try {
             coroutineScope {
                 withContext(Dispatchers.IO) {
-                    val response = tvShowApiService.getTVShowReviews(movieId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page = page)?.execute()
+                    val response = tvShowApiService.getTVShowReviews(movieId, apiKey = API_KEY, language = defaultLocale(), page = page)?.execute()
                     if (response?.isSuccessful == true){
                         response.body()?.getResults()
                     } else {
@@ -454,7 +480,7 @@ class TVShowsRepository@Inject constructor(
     fun fetchTVShowsDetailsWithCastAndVideos(seriesId: Int, callback: (Response<TVShowDetailsWithCastAndVideos?>) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                tvShowApiService.getTVShowDetailsWithCastAndVideos(seriesId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())
+                tvShowApiService.getTVShowDetailsWithCastAndVideos(seriesId, apiKey = API_KEY, language = defaultLocale())
                     ?.enqueue(object : Callback<TVShowDetailsWithCastAndVideos?> {
                         override fun onResponse(
                             p0: Call<TVShowDetailsWithCastAndVideos?>,
@@ -498,7 +524,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {
@@ -512,7 +538,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {
@@ -526,7 +552,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {
@@ -540,7 +566,7 @@ class TVShowsRepository@Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val pages = getTotalPages {
-                    tvShowApiService.getTotalPagesPopular(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale())?.execute()
+                    tvShowApiService.getTotalPagesPopular(apiKey = API_KEY, language = defaultLocale())?.execute()
                 }
                 pages
             } catch (e: Exception) {

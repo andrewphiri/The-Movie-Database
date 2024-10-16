@@ -122,7 +122,6 @@ fun HomeScreen(
 
     LaunchedEffect(user) {
         if (user != null) {
-
             accountID = user?.accountId ?: 21411766
             sessionID = user?.sessionId
 //            Log.d("PROFILE_SCREEN", "Account ID: $accountID")
@@ -323,7 +322,7 @@ fun HomeScreen(
 
                         if (moviesNowPlaying.itemCount > 0 && moviesNowPlaying.loadState.refresh is LoadState.NotLoading) {
                             // Now Playing Movies
-                            item {
+                            item(key = "now_playing_movies") {
 
                                 MovieList(
                                     movies = moviesNowPlaying,
@@ -336,7 +335,7 @@ fun HomeScreen(
                         }
 
                         if (trendingMedia.itemCount > 0 && trendingMedia.loadState.refresh is LoadState.NotLoading) {
-                            item {
+                            item(key = "trending_media") {
                                 TrendingMediaCard(
                                     items = trendingMedia,
                                     navigateToMovieDetailsScreen = navigateToMovieDetails,
@@ -347,7 +346,7 @@ fun HomeScreen(
                         }
 
                         if (tvShowsPopular.itemCount > 0 && tvShowsPopular.loadState.refresh is LoadState.NotLoading) {
-                            item {
+                            item(key = "popular_tv_shows") {
                                 TVShowList(
                                     tvShows = tvShowsPopular,
                                     categoryTitle = "Popular TV Shows",
@@ -358,7 +357,7 @@ fun HomeScreen(
                         }
 
                         if (popularPeople.itemCount > 0 && popularPeople.loadState.refresh is LoadState.NotLoading) {
-                            item {
+                            item(key = "popular_people") {
                                 PopularPeopleList(
                                     peopleList = popularPeople,
                                     categoryTitle = "Popular People",
@@ -370,7 +369,7 @@ fun HomeScreen(
 
                         if (moviesUpcoming.itemCount > 0 && moviesUpcoming.loadState.refresh is LoadState.NotLoading) {
                             // Upcoming Movies
-                            item {
+                            item(key = "upcoming_movies") {
                                 MovieList(
                                     movies = moviesUpcoming,
                                     categoryTitle = "Upcoming Movies",
@@ -382,7 +381,7 @@ fun HomeScreen(
 
                         if (moviesTrending.itemCount > 0 && moviesTrending.loadState.refresh is LoadState.NotLoading) {
                             // Trending Movies
-                            item {
+                            item(key = "trending_movies") {
 
                                 MovieList(
                                     movies = moviesTrending,
@@ -396,7 +395,7 @@ fun HomeScreen(
 
 
                         if (tvShowsTopRated.itemCount > 0 && tvShowsTopRated.loadState.refresh is LoadState.NotLoading) {
-                            item {
+                            item(key = "top_rated_tv_shows") {
                                 TVShowList(
                                     tvShows = tvShowsTopRated,
                                     categoryTitle = "Top Rated TV Shows",
@@ -408,7 +407,7 @@ fun HomeScreen(
 
                         if (moviesPopular.itemCount > 0 && moviesPopular.loadState.refresh is LoadState.NotLoading) {
                             // Popular Movies
-                            item {
+                            item(key = "popular_movies") {
                                 MovieList(
                                     movies = moviesPopular,
                                     categoryTitle = "Popular Movies",
@@ -419,7 +418,7 @@ fun HomeScreen(
                         }
 
                         if (tvShowsOnTheAirTVShows.itemCount > 0 && tvShowsOnTheAirTVShows.loadState.refresh is LoadState.NotLoading) {
-                            item {
+                            item(key = "on_the_air_tv_shows") {
                                 TVShowList(
                                     tvShows = tvShowsOnTheAirTVShows,
                                     categoryTitle = "On The Air TV Shows",
@@ -433,7 +432,7 @@ fun HomeScreen(
 
                         if (moviesTopRated.itemCount > 0 && moviesTopRated.loadState.refresh is LoadState.NotLoading) {
                             // Top Rated Movies
-                            item {
+                            item(key = "top_rated_movies") {
                                 MovieList(
                                     movies = moviesTopRated,
                                     categoryTitle = "Top Rated Movies",
@@ -445,7 +444,7 @@ fun HomeScreen(
                         }
 
                         if ( tvShowsAiringTodayTVShows.itemCount > 0 && tvShowsAiringTodayTVShows.loadState.refresh is LoadState.NotLoading) {
-                            item {
+                            item(key = "airing_today_tv_shows") {
                                 TVShowList(
                                     tvShows = tvShowsAiringTodayTVShows,
                                     categoryTitle = "Airing Today TV Shows",

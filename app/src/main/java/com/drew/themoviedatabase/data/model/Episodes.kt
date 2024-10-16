@@ -18,14 +18,10 @@ data class Episode(
     @SerializedName("still_path") val stillPath: String?,
     @SerializedName("vote_average") val voteAverage: Double,
     @SerializedName("vote_count") val voteCount: Int,
-    @SerializedName("crew") val crew: List<com.drew.themoviedatabase.data.model.Crew>,
-    @SerializedName("guest_stars") val guestStars: List<Any>
+    @SerializedName("crew") val crew: List<Crew>,
+    @SerializedName("guest_stars") val guestStars: List<GuestStar>
 )
 
-data class SeasonResponse(
-    @SerializedName("_id") val id: String,
-    @SerializedName("air_date") val airDate: String,
-    @SerializedName("episodes") val episodes: List<com.drew.themoviedatabase.data.model.Episode>
-)
+
 
 

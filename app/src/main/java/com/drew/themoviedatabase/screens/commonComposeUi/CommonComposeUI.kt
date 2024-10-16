@@ -385,7 +385,7 @@ fun PopularPeopleList(
         ) {
             peopleList?.itemCount.let {
                 if (it != null) {
-                    items(it) { index ->
+                    items(key = { index -> index }, count = it) { index ->
                         peopleList[index]?.let {
                             PopularPersonCard(
                                 modifier = modifier,
@@ -436,7 +436,7 @@ fun MovieList(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
 
-                items(movies.itemCount) { index ->
+                items(key = { index -> index }, count = movies.itemCount) { index ->
                     movies[index]?.let {
                         MovieItem(
                             modifier = modifier,
@@ -487,7 +487,7 @@ fun MovieItem(
         AsyncImage(
             modifier = Modifier
                 .fillMaxWidth(),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(movie.posterPath),
+            model = NetworkClient().getPosterUrl(movie.posterPath),
             contentDescription = "${movie.title} poster",
             placeholder = painterResource(R.drawable.mdb_1)
         )
@@ -631,7 +631,7 @@ fun CombinedCreditsMovieList(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             combinedCredits?.size?.let {
-                items(it) {
+                items(key = {index -> index}, count = it) {
                     combinedCredits.get(it)?.let { credit ->
                         CombinedCreditsItem(
                             modifier = modifier,
@@ -1038,7 +1038,7 @@ fun CastList(
             verticalAlignment = Alignment.CenterVertically
         ) {
             castMembers?.size?.let {
-                items(it) {
+                items(key = { index -> index }, count = it) {
                     CastCard(
                         castMember = castMembers[it],
                         navigateToCastDetailsScreen = navigateToCastDetailsScreen
@@ -1092,7 +1092,7 @@ fun TVShowList(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
 
-                items(tvShows.itemCount) { index ->
+                items(key = { index -> index }, count = tvShows.itemCount) { index ->
                     tvShows[index]?.let {
                         TVShowItem(
                             modifier = modifier,
@@ -1274,7 +1274,7 @@ fun ReviewList(
     modifier: Modifier = Modifier,
     reviews: LazyPagingItems<com.drew.themoviedatabase.data.model.Reviews>?,
     categoryTitle: String = "",
-    onItemClick: () -> Unit
+
 ) {
     Column(
         modifier = modifier,
@@ -1308,8 +1308,7 @@ fun ReviewList(
                             reviews.get(index)?.let { review ->
                                 ReviewItemCard(
                                     modifier = modifier,
-                                    reviews = review,
-                                    onItemClick = onItemClick
+                                    reviews = review
                                 )
                             }
                         }
@@ -1324,13 +1323,11 @@ fun ReviewList(
 fun ReviewItemCard(
     modifier: Modifier = Modifier,
     reviews: com.drew.themoviedatabase.data.model.Reviews?,
-    onItemClick: () -> Unit
 ) {
     ElevatedCard(
         modifier = modifier
             .height(170.dp)
-            .width(300.dp)
-            .clickable { onItemClick() },
+            .width(300.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -1350,12 +1347,8 @@ fun ReviewItemCard(
                 }
             }
             reviews?.content?.let {
-                Text(
-                    text = it,
-                    maxLines = 7,
-                    minLines = 7,
-                    style = MaterialTheme.typography.bodySmall,
-                    overflow = TextOverflow.Ellipsis
+                OverviewText(
+                    overview = it,
                 )
             }
         }
@@ -1399,7 +1392,7 @@ fun PhotosList(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (photos != null) {
-                items(photos.itemCount) { index ->
+                items(key = { index -> index }, count = photos.itemCount) { index ->
                     photos[index]?.let { photo ->
                         PhotosItem(
                             modifier = modifier,
@@ -1688,7 +1681,8 @@ fun OverviewDialog(
 @Composable
 fun OverviewText(
     modifier: Modifier = Modifier,
-    overview: String
+    overview: String,
+    maxLines: Int = 7,
 ) {
     var isOverviewShowing by remember { mutableStateOf(false) }
     val textLayoutResultState: MutableState<TextLayoutResult?> = remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -1716,7 +1710,7 @@ fun OverviewText(
         },
         text = overview,
         style = MaterialTheme.typography.bodySmall,
-        maxLines = 7,
+        maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
         onTextLayout = { textLayoutResultState.value = it}
     )

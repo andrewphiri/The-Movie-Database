@@ -19,6 +19,8 @@ import com.drew.themoviedatabase.screens.Cast.CastDetailsScreen
 import com.drew.themoviedatabase.screens.Details.DetailsMovieScreen
 import com.drew.themoviedatabase.screens.Details.DetailsTVScreen
 import com.drew.themoviedatabase.screens.Details.MovieDetailsScreen
+import com.drew.themoviedatabase.screens.Details.SeasonNavScreen
+import com.drew.themoviedatabase.screens.Details.SeasonsScreen
 import com.drew.themoviedatabase.screens.Details.TVDetailsScreen
 import com.drew.themoviedatabase.screens.Home.HomeScreen
 import com.drew.themoviedatabase.screens.Profile.LoginViewModel
@@ -116,13 +118,6 @@ fun NavGraphBuilder.detailsNavGraph(
                         )
                     )
                 },
-                navigateToReviews = { id ->
-                    navController.navigate(
-                        MoviesReviewsScreen(
-                            id = id
-                        )
-                    )
-                },
                 navigateToTrailers = { id ->
                     navController.navigate(
                         MovieTrailersNavScreen(
@@ -151,20 +146,32 @@ fun NavGraphBuilder.detailsNavGraph(
                         )
                     )
                 },
-                navigateToReviews = { id ->
-                    navController.navigate(
-                        TVReviewsScreen(
-                            id = id
-                        )
-                    )
-                },
                 navigateToTrailers = { id ->
                     navController.navigate(
                         TvTrailersNavScreen(
                             seriesID = id
                         )
                     )
+                },
+                navigateToSeasonsScreen = { seriesName,seriesID, numberOfSeasons ->
+                    navController.navigate(
+                        SeasonNavScreen(
+                            seriesName = seriesName,
+                            seriesId = seriesID,
+                            totalSeasons = numberOfSeasons
+                        )
+                    )
                 }
+            )
+        }
+        composable<SeasonNavScreen> {
+            val args = it.toRoute<SeasonNavScreen>()
+            SeasonsScreen(
+                seriesName = args.seriesName,
+                seriesId = args.seriesId,
+                totalSeasons = args.totalSeasons,
+                navigateToEpisodeScreen = {_,_ ->},
+                navigateUp = { navController.navigateUp()}
             )
         }
         composable<PersonDetailsScreen> {
