@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.screens.commonComposeUi
 
+import android.util.Log
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.animation.animateContentSize
@@ -46,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -435,7 +437,6 @@ fun MovieList(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-
                 items(key = { index -> index }, count = movies.itemCount) { index ->
                     movies[index]?.let {
                         MovieItem(
@@ -446,10 +447,7 @@ fun MovieList(
                         )
                     }
                 }
-
-
         }
-
     }
 }
 
@@ -800,7 +798,6 @@ fun YouTubePlayer(
                 'controls': 1, 
                 'rel': 0 
                 },
-                
                 events: {
                   'onReady': onPlayerReady,
                   'onStateChange': onPlayerStateChange
@@ -810,7 +807,7 @@ fun YouTubePlayer(
 
             function onPlayerReady(events) {
               event.target.playVideo();
-              player.unMute();
+              event.target.unMute();
             }
             
            function onPlayerStateChange(events) {
@@ -839,10 +836,7 @@ fun YouTubePlayer(
                     settings.javaScriptEnabled = true
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
-                    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
-                        setBackgroundColor(Color(0xFF171717).toArgb())
-                    }
-
+                    setBackgroundColor(Color(0xFF171717).toArgb())
                     settings.useWideViewPort = false
 
                     loadDataWithBaseURL(
@@ -970,9 +964,8 @@ fun YouTubeSinglePlayer(
                     settings.javaScriptEnabled = true
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
-                    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
-                        setBackgroundColor(Color(0xFF171717).toArgb())
-                    }
+                    setBackgroundColor(Color(0xFF171717).toArgb())
+
 
                     settings.useWideViewPort = false
 
@@ -1001,6 +994,137 @@ fun YouTubeSinglePlayer(
         )
     }
 }
+
+@Composable
+fun YouTubePlayerWithPlaylist(
+    modifier: Modifier = Modifier,
+    videoIds: List<String?>?,  // List of video IDs for the playlist
+) {
+    // Convert the videoIds list to a comma-separated string
+
+    val videoIdsString by rememberSaveable { mutableStateOf( videoIds?.joinToString(separator = ",")) }
+   // Log.d("VIDEO_LIST,", "YouTubePlayerWithPlaylist: ${videoIdsString}")
+    val randomVideo by rememberSaveable { mutableStateOf(videoIds?.random()) }
+    //Log.d("VIDEO_LIST,", "YouTubePlayerWithPlaylist: $randomVideo")
+    val htmlData = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: black;
+            }
+            #player {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100vw;
+              height: 100vh;
+            }
+            .video-container {
+              position: relative;
+              width: 100vw;
+              height: 100vh;
+              overflow: hidden;
+            }
+            .video-container iframe,
+            .video-container object,
+            .video-container embed {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="video-container">
+            <div id="player"></div>
+          </div>
+          <script>
+            var tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            var firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+            var player;
+            function onYouTubeIframeAPIReady() {
+              player = new YT.Player('player', {
+                playerVars: { 
+                'playlist': '$videoIdsString',
+                'autoplay': 1, 
+                'playsinline': 1,
+                 'mute': 0, 
+                'controls': 1, 
+                'rel': 0    
+                },
+                events: {
+                  'onReady': onPlayerReady,
+                  'onStateChange': onPlayerStateChange
+                }
+              });
+            }
+
+            function onPlayerReady(event) {
+             event.target.playVideo();
+             player.mute()
+            }
+
+           function onPlayerStateChange(events) {
+              if (event.data == YT.PlayerState.CUED) {
+                event.target.playVideo();
+              }
+          }
+          </script>
+        </body>
+        </html>
+    """.trimIndent()
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+    ) {
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    settings.javaScriptEnabled = true
+                    isVerticalScrollBarEnabled = false
+                    isHorizontalScrollBarEnabled = false
+                    settings.mediaPlaybackRequiresUserGesture = false
+                    setBackgroundColor(Color(0xFF171717).toArgb())
+
+                    loadDataWithBaseURL(
+                        "https://www.youtube.com",
+                        htmlData,
+                        "text/html",
+                        "utf-8",
+                        null
+                    )
+                }
+            },
+            update = { webView ->
+                webView.loadDataWithBaseURL(
+                    "https://www.youtube.com",
+                    htmlData,
+                    "text/html",
+                    "utf-8",
+                    null
+                )
+            },
+            modifier = Modifier.fillMaxSize() // WebView takes up the full screen
+        )
+    }
+}
+
+
+
 
 @Composable
 fun CastList(
@@ -1092,7 +1216,7 @@ fun TVShowList(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
 
-                items(key = { index -> index }, count = tvShows.itemCount) { index ->
+                items(key = { index ->  index }, count = tvShows.itemCount) { index ->
                     tvShows[index]?.let {
                         TVShowItem(
                             modifier = modifier,
@@ -1303,7 +1427,7 @@ fun ReviewList(
         ) {
             reviews?.itemCount.let {
                 if (it != null) {
-                    items(it) { index ->
+                    items(count = it, key = { index -> index }) { index ->
                         if (reviews != null) {
                             reviews.get(index)?.let { review ->
                                 ReviewItemCard(
@@ -1726,7 +1850,7 @@ fun GenreList(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         genres?.size?.let {
-            items(it) { index ->
+            items(count = it, key = {index ->  index}) { index ->
                 genres.get(index)?.let {
                     ElevatedCard(
                         shape = RectangleShape
@@ -1830,7 +1954,7 @@ fun MovieTVCertifications(
 @Composable
 fun VideosPager(
     modifier: Modifier = Modifier,
-    trailers: List<Trailers?>?,
+    trailers: List<String?>?,
 ) {
     val pagerState = rememberPagerState {
         trailers?.size ?: 0
@@ -1838,39 +1962,38 @@ fun VideosPager(
 
     Box(modifier = modifier.fillMaxSize()) {
 
-        Column {
-            HorizontalPager(modifier = Modifier.weight(1f, true), state = pagerState) {
-                YouTubeSinglePlayer(
-                    videoId = trailers?.get(it)?.key ?: ""
+            HorizontalPager(state = pagerState) {
+                YouTubePlayerWithPlaylist(
+                    videoIds = trailers?.shuffled()
                 )
-            }
-           Box(
-               modifier = Modifier.weight(0.1f, true)
-               .fillMaxWidth()
-           ) {
-               Row(
-                   Modifier
-                       .wrapContentHeight()
-                       .fillMaxSize()
-                       .align(Alignment.BottomCenter)
-                       .padding(bottom = 8.dp),
-                   horizontalArrangement = Arrangement.Center,
-                   verticalAlignment = Alignment.CenterVertically
-               ) {
-                   repeat(pagerState.pageCount) { iteration ->
-                       val color = if (pagerState.currentPage == iteration) Color.White else Color.Transparent
-                       val borderColor = if (pagerState.currentPage == iteration) Color.Transparent else Color.LightGray
-                       Box(
-                           modifier = Modifier
-                               .padding(2.dp)
-                               .clip(CircleShape)
-                               .border(1.dp, borderColor, shape = CircleShape)
-                               .background(color)
-                               .size(6.dp)
-                       )
-                   }
-               }
-           }
+
+//           Box(
+//               modifier = Modifier.weight(0.1f, true)
+//               .fillMaxWidth()
+//           ) {
+//               Row(
+//                   Modifier
+//                       .wrapContentHeight()
+//                       .fillMaxSize()
+//                       .align(Alignment.BottomCenter)
+//                       .padding(bottom = 8.dp),
+//                   horizontalArrangement = Arrangement.Center,
+//                   verticalAlignment = Alignment.CenterVertically
+//               ) {
+//                   repeat(pagerState.pageCount) { iteration ->
+//                       val color = if (pagerState.currentPage == iteration) Color.White else Color.Transparent
+//                       val borderColor = if (pagerState.currentPage == iteration) Color.Transparent else Color.LightGray
+//                       Box(
+//                           modifier = Modifier
+//                               .padding(2.dp)
+//                               .clip(CircleShape)
+//                               .border(1.dp, borderColor, shape = CircleShape)
+//                               .background(color)
+//                               .size(6.dp)
+//                       )
+//                   }
+//               }
+//           }
         }
     }
 }

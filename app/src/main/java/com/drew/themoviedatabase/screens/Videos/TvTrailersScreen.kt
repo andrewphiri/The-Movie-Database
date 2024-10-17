@@ -56,7 +56,7 @@ fun TvTrailersScreen(
     ) { innerPadding ->
         VideosPager(
             modifier = modifier.padding(innerPadding),
-            trailers = trailers
+            trailers = trailers?.map { it?.key },
         )
     }
 }

@@ -59,7 +59,7 @@ fun MovieTrailersScreen(
 //        )
         VideosPager(
             modifier = modifier.padding(innerPadding),
-            trailers = trailers
+            trailers = trailers?.map { it?.key } ,
         )
     }
 }

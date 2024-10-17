@@ -21,7 +21,7 @@ class LoginRepository @Inject constructor(
                 withContext(Dispatchers.IO) {
                     try {
                         val response = loginService.createRequestToken(apiKey = com.drew.themoviedatabase.data.remote.API_KEY)?.execute()
-                        Log.d("LOGIN_REPOSITORY", "Response: ${response?.body()}")
+                       // Log.d("LOGIN_REPOSITORY", "Response: ${response?.body()}")
                         if (response?.isSuccessful == true) {
                             response.body()
                         } else {

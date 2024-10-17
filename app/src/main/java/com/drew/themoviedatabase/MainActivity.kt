@@ -1,7 +1,9 @@
 package com.drew.themoviedatabase
 
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,7 +28,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-
+            val connectivityManager = getSystemService(ConnectivityManager::class.java)
+            val currentNetwork = connectivityManager.activeNetwork
+            Log.d("MainActivity", "Current network: $currentNetwork")
             TheMovieDatabaseDarkTheme {
                     MovieDatabaseApp(loginViewModel = loginViewModel)
             }
@@ -49,7 +53,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         text = "Hello $name!",
         modifier = modifier
     )
-
 }
 
 @Preview(showBackground = true)
