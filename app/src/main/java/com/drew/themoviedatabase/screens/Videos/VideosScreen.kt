@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
 import com.drew.themoviedatabase.screens.commonComposeUi.VideosPager
 import com.google.gson.JsonObject
 import kotlinx.coroutines.async
@@ -32,15 +33,16 @@ fun VideosScreen(
     val coroutineScope = rememberCoroutineScope()
     val playlistID by viewModel.playlistID.observeAsState()
     val playlistItems by viewModel.playlistItems.observeAsState()
-    var playlist by remember { mutableStateOf<JsonObject?>(null) }
+
+    val playlistLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = playlistID) {
         if (playlistID == null) {
-            viewModel.getPlaylistID("UCjmJDM5pRKbUlVIzDYYWb6g")
-            Log.d("VideosScreen", "Playlist ID: $playlistID")
+            viewModel.getPlaylistID("UCi8e0iOVk1fEOogdfu4YgfA")
+            //Log.d("VideosScreen", "Playlist ID: $playlistID")
         } else {
             viewModel.getPlaylistItems(playlistId = playlistID!!)
-            Log.d("VideosScreen", "Playlist items: $playlistItems")
+//            Log.d("VideosScreen", "Playlist items: $playlistItems")
         }
     }
     Box(
@@ -48,20 +50,12 @@ fun VideosScreen(
         contentAlignment = Alignment.Center
     ) {
 
-//        Text(
-//            modifier = Modifier.clickable {
-//                coroutineScope.launch {
-//
-//                    //val playlistItems = async { viewModel.getPlaylistItems(playlistId = "UUjmJDM5pRKbUlVIzDYYWb6g")  }.await()
-//                    Log.d("VideosScreen", "Playlist items: $playlistItems")
-//                }
-//
-//            },
-//            text = playlistID.toString()
-//        )
+        if (playlistItems == null) {
+            LoadingSpinner()
+        }
 
         VideosPager(
-            trailers = playlistItems
+            trailers = playlistItems?.shuffled()
         )
     }
 }

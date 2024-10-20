@@ -33,6 +33,14 @@ interface TVShowApiService {
         @Query("api_key") apiKey: String?,
         @Query ("page") page: Int = 1): Call<TVShowsResponse?>?
 
+    @GET("discover/tv")
+    fun getTVShowsByGenre(
+        @Query("api_key") apiKey: String?,
+        @Query("language") language: String,
+        @Query("with_genres") genreId: Int,
+        @Query ("page") page: Int = 1
+    ): Call<TVShowsResponse?>?
+
     @GET("trending/tv/{time_window}")
     fun getTrendingTVShows(
         @Query("language") language: String,

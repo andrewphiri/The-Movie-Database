@@ -94,6 +94,7 @@ fun TVDetailsScreen(
     tvShowsViewModel: TVShowsViewModel = hiltViewModel(),
     navigateToCastDetails: (Int) -> Unit,
     navigateToTrailers: (Int) -> Unit,
+    navigateToGenreScreen: (Int,String) -> Unit,
     navigateToSeasonsScreen: (String,Int, Int) -> Unit,
     userViewModel: UserViewModel = hiltViewModel(),
     moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
@@ -215,7 +216,10 @@ fun TVDetailsScreen(
                     if (tvDetails?.genres?.isNotEmpty() == true) {
                         item {
                             GenreList(
-                                genres = tvDetails?.genres
+                                genres = tvDetails?.genres,
+                                navigateToGenreScreen = { genreId, genreName ->
+                                    navigateToGenreScreen(genreId, genreName)
+                                }
                             )
                         }
                     }
@@ -419,7 +423,6 @@ fun TVDetailsCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(230.dp)
         ) {
             if (isTrailersEmpty) {
 

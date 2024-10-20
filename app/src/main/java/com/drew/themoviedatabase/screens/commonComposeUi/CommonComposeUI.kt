@@ -50,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -149,19 +150,36 @@ fun CastCard(
     castMember: com.drew.themoviedatabase.data.model.CastMembers?,
     navigateToCastDetailsScreen: (Int) -> Unit
 ) {
+    var isImageLoading by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
             .width(120.dp)
             .height(250.dp),
         onClick = { navigateToCastDetailsScreen(castMember?.id ?: 0) }
     ) {
-        AsyncImage(
+        Box(
             modifier = Modifier
-                .height(150.dp)
-                .width(120.dp),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(castMember?.profilePath),
-            contentDescription = "${castMember?.name} profile picture",
-        )
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(castMember?.profilePath),
+                contentDescription = "${castMember?.name}",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
         Text(
             modifier = Modifier.padding(4.dp),
             text = castMember?.name ?: "",
@@ -187,18 +205,38 @@ fun PopularPersonCard(
     person: com.drew.themoviedatabase.data.model.PopularPerson?,
     navigateToCastDetailsScreen: (Int) -> Unit
 ) {
+    var isImageLoading by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
             .width(150.dp)
             .height(320.dp),
         onClick = { navigateToCastDetailsScreen(person?.id ?: 0) }
     ) {
-        AsyncImage(
+
+        Box(
             modifier = Modifier
-                .fillMaxWidth(),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(person?.profile_path),
-            contentDescription = "${person?.name} profile picture",
-        )
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(person?.profile_path),
+                contentDescription = "${person?.name} ",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
+
         Text(
             modifier = Modifier.padding(4.dp),
             text = person?.name ?: "",
@@ -229,7 +267,6 @@ fun MovieList(
     color: Color,
     onItemClick: (Int) -> Unit
 ) {
-
     val watchRegion = getWatchRegion()
     Column(
         modifier = modifier,
@@ -458,6 +495,7 @@ fun MovieItem(
     onItemClick: (Int) -> Unit,
     watchRegion: String = "US"
 ) {
+    var isImageLoading by remember { mutableStateOf(false) }
     val ageRate = movie.certifications.results
         .find { it.iso31661 == "US" }?.releaseDates?.
         find { it.certification != "" }?.certification ?: ""
@@ -482,13 +520,29 @@ fun MovieItem(
             .width(150.dp),
         onClick = { onItemClick(movie.id)}
     ) {
-        AsyncImage(
+        Box(
             modifier = Modifier
-                .fillMaxWidth(),
-            model = NetworkClient().getPosterUrl(movie.posterPath),
-            contentDescription = "${movie.title} poster",
-            placeholder = painterResource(R.drawable.mdb_1)
-        )
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(movie.posterPath),
+                contentDescription = "${movie.title} poster",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -550,6 +604,126 @@ fun MovieItem(
             ProvidersList(
                 modifier = modifier,
                 providers = allProviders.toSet().toList().take(4).sortedBy { it.displayPriority }
+            )
+        }
+    }
+}
+
+@Composable
+fun MovieItemByGenre(
+    modifier: Modifier = Modifier,
+    movie: MovieDetailsReleaseData,
+    onItemClick: (Int) -> Unit,
+    watchRegion: String = "US"
+) {
+    var isImageLoading by remember { mutableStateOf(false) }
+    val ageRate = movie.certifications.results
+        .find { it.iso31661 == "US" }?.releaseDates?.
+        find { it.certification != "" }?.certification ?: ""
+
+    val watchProvidersBuy = movie.watchProviders.results.get(watchRegion)?.buy?.toList()
+    val watchProvidersRent = movie.watchProviders.results.get(watchRegion)?.rent?.toList()
+    val watchProvidersFlatRate = movie.watchProviders.results.get(watchRegion)?.flatrate?.toList()
+    val allProviders: SnapshotStateList<com.drew.themoviedatabase.data.model.Provider>? = remember { mutableStateListOf() }
+    if (watchProvidersRent != null) {
+        allProviders?.addAll(watchProvidersRent)
+    }
+    if (watchProvidersBuy != null) {
+        allProviders?.addAll(watchProvidersBuy)
+    }
+    if (watchProvidersFlatRate != null) {
+        allProviders?.addAll(watchProvidersFlatRate)
+    }
+
+    ElevatedCard(
+        modifier = modifier,
+        onClick = { onItemClick(movie.id)}
+    ) {
+        Box(
+            modifier = Modifier,
+            contentAlignment = Alignment.Center
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(movie.posterPath),
+                contentDescription = "${movie.title} poster",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Image(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Movie Rating",
+                    colorFilter = ColorFilter.tint(DarkOrange)
+                )
+
+                Text(
+                    text = movie.voteAverage.toBigDecimal().setScale(1, java.math.RoundingMode.HALF_UP).toString(),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                text = movie.title,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = movie.releaseDate.split('-')[0],
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = ageRate,
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Text(
+                    text = formatDuration(movie.runtime),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+        if (allProviders != null) {
+            ProvidersList(
+                modifier = modifier,
+                providers = allProviders.toSet().toList().take(3).sortedBy { it.displayPriority }
             )
         }
     }
@@ -649,6 +823,7 @@ fun CombinedCreditsItem(
     combinedCredits: com.drew.themoviedatabase.data.model.CombinedCredits?,
     onItemClick: (Int) -> Unit
 ) {
+    var isImageLoading by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
             .height(370.dp)
@@ -659,14 +834,29 @@ fun CombinedCreditsItem(
             }
         }
     ) {
-        AsyncImage(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(combinedCredits?.posterPath),
-            contentDescription = "${combinedCredits?.title} poster",
-            placeholder = null
-        )
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(combinedCredits?.posterPath),
+                contentDescription = "${combinedCredits?.title} poster",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -823,16 +1013,11 @@ fun YouTubePlayer(
     // Constraining the WebView within the box to respect the height and size
     Box(
         modifier = modifier
-            .height(230.dp) // Explicit height
             .fillMaxWidth()
     ) {
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
                     settings.javaScriptEnabled = true
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
@@ -860,8 +1045,7 @@ fun YouTubePlayer(
 
             },
             modifier = Modifier
-                .height(230.dp) // Explicit height for the WebView
-                .fillMaxWidth()  // Fill the width of the parent container
+                .fillMaxWidth()
         )
     }
 }
@@ -957,16 +1141,10 @@ fun YouTubeSinglePlayer(
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
                     settings.javaScriptEnabled = true
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
                     setBackgroundColor(Color(0xFF171717).toArgb())
-
-
                     settings.useWideViewPort = false
 
                     loadDataWithBaseURL(
@@ -998,14 +1176,11 @@ fun YouTubeSinglePlayer(
 @Composable
 fun YouTubePlayerWithPlaylist(
     modifier: Modifier = Modifier,
-    videoIds: List<String?>?,  // List of video IDs for the playlist
+    videoIds: SnapshotStateList<String?>?,
 ) {
     // Convert the videoIds list to a comma-separated string
 
     val videoIdsString by rememberSaveable { mutableStateOf( videoIds?.joinToString(separator = ",")) }
-   // Log.d("VIDEO_LIST,", "YouTubePlayerWithPlaylist: ${videoIdsString}")
-    val randomVideo by rememberSaveable { mutableStateOf(videoIds?.random()) }
-    //Log.d("VIDEO_LIST,", "YouTubePlayerWithPlaylist: $randomVideo")
     val htmlData = """
         <!DOCTYPE html>
         <html>
@@ -1313,19 +1488,38 @@ fun TVShowItem(
         allProviders?.addAll(watchProvidersBuy)
     }
 
+    var isImageLoading by remember { mutableStateOf(false) }
+
     ElevatedCard(
         modifier = modifier
-            .height(400.dp)
+            .height(390.dp)
             .width(150.dp),
         onClick = { onItemClick(tvShow.id)}
     ) {
-        AsyncImage(
-            modifier = Modifier
-                .fillMaxWidth(),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(tvShow.posterPath),
-            contentDescription = "${tvShow.name} poster",
-            placeholder = painterResource(R.drawable.mdb_1)
-        )
+
+        Box(
+          modifier = Modifier
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(tvShow.posterPath),
+                contentDescription = "${tvShow.name} poster",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -1388,6 +1582,132 @@ fun TVShowItem(
            ProvidersList(
                providers = allProviders.toSet().toList().take(4).sortedBy { it.displayPriority }
            )
+        }
+    }
+}
+
+@Composable
+fun TVShowItemByGenre(
+    modifier: Modifier = Modifier,
+    tvShow: com.drew.themoviedatabase.data.model.TVShowDetails,
+    onItemClick: (Int) -> Unit,
+    watchRegion: String = "US"
+) {
+    val ageRate = tvShow.contentRatings
+        ?.results?.find { it.iso31661 == "US" }?.rating ?: ""
+
+    val watchProvidersBuy = tvShow.watchProviders.results.get(watchRegion)?.buy?.toList()
+    val watchProvidersRent = tvShow.watchProviders.results.get(watchRegion)?.rent?.toList()
+    val watchProvidersFlatrate = tvShow.watchProviders.results.get(watchRegion)?.flatrate?.toList()
+    val watchProvidersFree = tvShow.watchProviders.results.get(watchRegion)?.free?.toList()
+
+    val allProviders: SnapshotStateList<com.drew.themoviedatabase.data.model.Provider>? = remember { mutableStateListOf() }
+    if (watchProvidersFlatrate != null) {
+        allProviders?.addAll(watchProvidersFlatrate)
+    }
+    if (watchProvidersFree != null) {
+        allProviders?.addAll(watchProvidersFree)
+    }
+
+    if (watchProvidersRent != null) {
+        allProviders?.addAll(watchProvidersRent)
+    }
+    if (watchProvidersBuy != null) {
+        allProviders?.addAll(watchProvidersBuy)
+    }
+
+    var isImageLoading by remember { mutableStateOf(false) }
+
+    ElevatedCard(
+        modifier = modifier,
+        onClick = { onItemClick(tvShow.id)}
+    ) {
+
+        Box(
+            modifier = Modifier
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(tvShow.posterPath),
+                contentDescription = "${tvShow.name} poster",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Image(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "TV Show Rating",
+                    colorFilter = ColorFilter.tint(DarkOrange)
+                )
+
+                Text(
+                    text = tvShow.voteAverage.toBigDecimal().setScale(1, java.math.RoundingMode.HALF_UP).toString(),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                text = tvShow.name,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = tvShow.firstAirDate.split('-')[0],
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = ageRate,
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Text(
+                    text = "${tvShow.numberOfEpisodes}eps",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        if (allProviders != null) {
+            ProvidersList(
+                providers = allProviders.toSet().toList().take(3).sortedBy { it.displayPriority }
+            )
         }
     }
 }
@@ -1538,15 +1858,36 @@ fun PhotosItem(
     movieImages: com.drew.themoviedatabase.data.model.Photos,
     onItemClick: () -> Unit
 ) {
+    var isImageLoading by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
             .height(150.dp)
             .width(120.dp),
         onClick = onItemClick
     ) {
-        AsyncImage(
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(movieImages.filePath) ,
-            contentDescription = "" )
+        Box(
+            modifier = Modifier
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(movieImages.filePath),
+                contentDescription = "",
+                onLoading = {
+
+                    isImageLoading = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
     }
 }
 
@@ -1843,7 +2184,8 @@ fun OverviewText(
 @Composable
 fun GenreList(
     modifier: Modifier = Modifier,
-    genres: List<com.drew.themoviedatabase.data.model.Genre?>?
+    genres: List<com.drew.themoviedatabase.data.model.Genre?>?,
+    navigateToGenreScreen: (Int, String) -> Unit
 ) {
     LazyRow(
         modifier = modifier.padding(8.dp),
@@ -1853,7 +2195,8 @@ fun GenreList(
             items(count = it, key = {index ->  index}) { index ->
                 genres.get(index)?.let {
                     ElevatedCard(
-                        shape = RectangleShape
+                        shape = RectangleShape,
+                        onClick = { navigateToGenreScreen(it.id, it.name) }
                     ) {
                         Text(
                             modifier = Modifier.padding(8.dp),
@@ -1959,13 +2302,17 @@ fun VideosPager(
     val pagerState = rememberPagerState {
         trailers?.size ?: 0
     }
-
     Box(modifier = modifier.fillMaxSize()) {
 
             HorizontalPager(state = pagerState) {
-                YouTubePlayerWithPlaylist(
-                    videoIds = trailers?.shuffled()
-                )
+                if (trailers == null) {
+                    LoadingSpinner(modifier = Modifier.align(Alignment.Center))
+                } else {
+                    YouTubePlayerWithPlaylist(
+                        videoIds = trailers.shuffled().toMutableStateList()
+                    )
+                }
+
 
 //           Box(
 //               modifier = Modifier.weight(0.1f, true)
@@ -2008,6 +2355,7 @@ fun PhotosPager(
     val pagerState = rememberPagerState(initialPage = initialPage) {
         photos?.size ?: 0
     }
+    var isImageLoading by remember { mutableStateOf(false) }
         Column(
             modifier = modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -2026,10 +2374,29 @@ fun PhotosPager(
                 }
             }
             HorizontalPager(modifier = Modifier.weight(1f, true), state = pagerState) {
-                AsyncImage(
-                    model = NetworkClient().getPosterUrl(photos?.get(it),"original"),
-                    contentDescription = ""
-                )
+                Box(
+                    modifier = Modifier
+                ) {
+                    if (isImageLoading) {
+                        LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+                    }
+                    AsyncImage(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        model = NetworkClient().getPosterUrl(photos?.get(it),"original"),
+                        contentDescription = "",
+                        onLoading = {
+
+                            isImageLoading  = true
+                        },
+                        onSuccess = {
+                            isImageLoading = false
+                        },
+                        onError = {
+                            isImageLoading = false
+                        }
+                    )
+                }
             }
             Box(
                 modifier = Modifier.weight(0.1f, true)
@@ -2104,10 +2471,10 @@ fun LazyListState.isScrollingUp(): Boolean {
 }
 
 @Composable
-fun LoadingSpinner(modifier: Modifier = Modifier) {
+fun LoadingSpinner(modifier: Modifier = Modifier, size: Dp = 50.dp) {
     CircularProgressIndicator(
         color = DarkOrange,
         modifier = modifier
-            .size(50.dp)
+            .size(size)
     )
 }

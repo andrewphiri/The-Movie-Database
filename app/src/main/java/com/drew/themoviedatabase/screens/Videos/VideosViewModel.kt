@@ -21,15 +21,15 @@ class VideosViewModel @Inject constructor(
     private val _playlistItems = MutableLiveData<List<String?>?>()
     val playlistItems: LiveData<List<String?>?> get() = _playlistItems
 
-    fun getPlaylistID(id: String) {
+    fun getPlaylistID(channelId: String) {
         viewModelScope.launch {
-            _playlistID.value  = youtubeRepository.getPlaylistID(id = id)?.items?.firstOrNull()?.contentDetails?.relatedPlaylists?.uploads
+            _playlistID.value  = youtubeRepository.getPlaylistID(id = channelId)?.items?.firstOrNull()?.contentDetails?.relatedPlaylists?.uploads
         }
     }
 
     fun getPlaylistItems(playlistId: String) {
         viewModelScope.launch {
-            _playlistItems.value = youtubeRepository.getPlaylistItems(playlistId = playlistId)?.items?.map { it.videoItem.videoId }
+            _playlistItems.value = youtubeRepository.getPlaylistItems(playlistId = playlistId)?.items?.filter { it.status.privacyStatus == "public" }?.map { it.videoItem.videoId }
         }
     }
 }

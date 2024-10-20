@@ -2,6 +2,7 @@ package com.drew.themoviedatabase.data.repository.TVShows
 
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
+import com.drew.themoviedatabase.data.model.TVShowDetails
 import com.drew.themoviedatabase.data.remote.API_KEY
 import com.drew.themoviedatabase.data.remote.MovieImagesResponse
 import com.drew.themoviedatabase.data.remote.ReviewsResponse
@@ -334,6 +335,18 @@ class TVShowsRepository@Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             callback(Response.success(null))
+        }
+    }
+
+    suspend fun fetchTVShowByGenre(pages: Int, genreId: Int) : List<TVShowDetails?>? {
+        return try {
+            fetchTVShowDetails(
+                pages = pages,
+                apiCall = { page -> tvShowApiService.getTVShowsByGenre(apiKey = API_KEY, language = defaultLocale(), genreId = genreId, page =  page)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 

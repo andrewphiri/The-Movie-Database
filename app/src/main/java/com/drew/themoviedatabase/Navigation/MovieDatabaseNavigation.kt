@@ -22,6 +22,10 @@ import com.drew.themoviedatabase.screens.Details.MovieDetailsScreen
 import com.drew.themoviedatabase.screens.Details.SeasonNavScreen
 import com.drew.themoviedatabase.screens.Details.SeasonsScreen
 import com.drew.themoviedatabase.screens.Details.TVDetailsScreen
+import com.drew.themoviedatabase.screens.Genre.MoviesByGenreNavScreen
+import com.drew.themoviedatabase.screens.Genre.MoviesByGenreScreen
+import com.drew.themoviedatabase.screens.Genre.TVShowsByGenreNavScreen
+import com.drew.themoviedatabase.screens.Genre.TVShowsByGenreScreen
 import com.drew.themoviedatabase.screens.Home.HomeScreen
 import com.drew.themoviedatabase.screens.Profile.LoginViewModel
 import com.drew.themoviedatabase.screens.Profile.ProfileNavScreen
@@ -124,6 +128,14 @@ fun NavGraphBuilder.detailsNavGraph(
                             movieID = id
                         )
                     )
+                },
+                navigateToGenreScreen = { genreId, genreName ->
+                    navController.navigate(
+                        MoviesByGenreNavScreen(
+                            genreID = genreId,
+                            genreName = genreName
+                        )
+                    )
                 }
             )
         }
@@ -161,6 +173,12 @@ fun NavGraphBuilder.detailsNavGraph(
                             totalSeasons = numberOfSeasons
                         )
                     )
+                },
+                navigateToGenreScreen = { genreId, genreName ->
+                    navController.navigate(
+                        TVShowsByGenreNavScreen(
+                            genreID = genreId,
+                            genreName = genreName ))
                 }
             )
         }
@@ -221,6 +239,36 @@ fun NavGraphBuilder.detailsNavGraph(
             TvTrailersScreen(
                 seriesID = args.seriesID,
                 onNavigateBack = { navController.navigateUp() }
+            )
+        }
+        composable<MoviesByGenreNavScreen> {
+            val args = it.toRoute<MoviesByGenreNavScreen>()
+            MoviesByGenreScreen(
+                genreID = args.genreID,
+                genreName = args.genreName,
+                navigateUp = { navController.navigateUp() },
+                navigateToMoviesDetailsScreen = { movieId ->
+                    navController.navigate(
+                        DetailsMovieScreen(
+                            movieId = movieId,
+                        )
+                    )
+                }
+            )
+        }
+        composable<TVShowsByGenreNavScreen> {
+            val args = it.toRoute<TVShowsByGenreNavScreen>()
+            TVShowsByGenreScreen(
+                genreID = args.genreID,
+                genreName = args.genreName,
+                navigateUp = { navController.navigateUp() },
+                navigateToTVShowDetailsScreen = { seriesId ->
+                    navController.navigate(
+                        DetailsTVScreen(
+                            seriesId = seriesId,
+                        )
+                    )
+                }
             )
         }
     }

@@ -4,5 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class VideoItems(
     @SerializedName("contentDetails")
-    val videoItem: VideoDetails
+    val videoItem: VideoDetails,
+    @SerializedName("status")
+    val status: Status
 )

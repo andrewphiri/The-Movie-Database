@@ -96,7 +96,8 @@ fun MovieDetailsScreen(
     navigateToTrailers: (Int) -> Unit,
     moviesTVsViewModel: MyMoviesTVsViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel(),
-    moviesShowsViewModel: MoviesShowsViewModel = hiltViewModel()
+    moviesShowsViewModel: MoviesShowsViewModel = hiltViewModel(),
+    navigateToGenreScreen: (Int, String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -201,7 +202,10 @@ fun MovieDetailsScreen(
                     if (movieDetails?.genres?.isNotEmpty() == true) {
                         item {
                             GenreList(
-                                genres = movieDetails?.genres
+                                genres = movieDetails?.genres,
+                                navigateToGenreScreen = { genreId, genreName ->
+                                    navigateToGenreScreen(genreId, genreName)
+                                }
                             )
                         }
                     }
@@ -398,7 +402,6 @@ fun MovieDetailsCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(230.dp)
         ) {
             if (isTrailersEmpty) {
                     Text(

@@ -32,17 +32,11 @@ fun TvTrailersScreen(
     canNavigateBack: Boolean = true
 ) {
     val trailers by tvShowsViewModel.trailers.observeAsState()
-    val listState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         tvShowsViewModel.fetchTrailer(seriesID)
     }
 
-    remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex == trailers?.size
-        }
-    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(top = 0.dp, bottom = 0.dp),

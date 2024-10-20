@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,7 +44,9 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.drew.themoviedatabase.R
 import com.drew.themoviedatabase.data.remote.MultiSearchResult
+import com.drew.themoviedatabase.data.remote.NetworkClient
 import com.drew.themoviedatabase.screens.Details.MoviesViewModel
+import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
 import com.drew.themoviedatabase.ui.theme.DarkOrange
 import kotlinx.serialization.Serializable
 
@@ -178,7 +181,7 @@ fun TVShowItemsSearch(
     height: Dp = 350.dp,
     width: Dp = 120.dp
 ) {
-
+    var isImageLoading by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
             .height(height)
@@ -189,13 +192,29 @@ fun TVShowItemsSearch(
             }
         }
     ) {
-        AsyncImage(
+        Box(
             modifier = Modifier
-                .fillMaxWidth(),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(tvShow?.poster_path),
-            contentDescription = "${tvShow?.name} poster",
-            placeholder = painterResource(R.drawable.mdb_1)
-        )
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(tvShow?.poster_path),
+                contentDescription = "${tvShow?.name} poster",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -253,6 +272,7 @@ fun CastCardSearchItem(
     height: Dp = 350.dp,
     width: Dp = 120.dp
 ) {
+    var isImageLoading by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
             .width(width)
@@ -263,12 +283,30 @@ fun CastCardSearchItem(
             }
         }
     ) {
-        AsyncImage(
-            modifier = Modifier.fillMaxWidth(),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(person?.profile_path),
-            contentDescription = "${person?.name} profile picture",
-        )
 
+        Box(
+            modifier = Modifier
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(person?.profile_path),
+                contentDescription = "${person?.name} profile picture",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -305,6 +343,7 @@ fun MovieItemSearch(
     height: Dp = 350.dp,
     width: Dp = 120.dp
 ) {
+    var isImageLoading by remember { mutableStateOf(false) }
     ElevatedCard(
         modifier = modifier
             .height(height)
@@ -315,13 +354,29 @@ fun MovieItemSearch(
             }
         }
     ) {
-        AsyncImage(
+        Box(
             modifier = Modifier
-                .fillMaxWidth(),
-            model = com.drew.themoviedatabase.data.remote.NetworkClient().getPosterUrl(movie?.poster_path),
-            contentDescription = "${movie?.title} poster",
-            placeholder = painterResource(R.drawable.mdb_1)
-        )
+        ) {
+            if (isImageLoading) {
+                LoadingSpinner(modifier = Modifier.align(Alignment.Center), size = 25.dp)
+            }
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                model = NetworkClient().getPosterUrl(movie?.poster_path),
+                contentDescription = "${movie?.title} poster",
+                onLoading = {
+
+                    isImageLoading  = true
+                },
+                onSuccess = {
+                    isImageLoading = false
+                },
+                onError = {
+                    isImageLoading = false
+                }
+            )
+        }
 
         Column(
             modifier = Modifier

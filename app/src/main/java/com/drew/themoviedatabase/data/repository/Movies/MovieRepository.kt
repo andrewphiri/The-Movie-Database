@@ -2,6 +2,7 @@ package com.drew.themoviedatabase.data.repository.Movies
 
 import com.drew.themoviedatabase.Utilities.defaultLocale
 import com.drew.themoviedatabase.Utilities.imageLanguage
+import com.drew.themoviedatabase.data.remote.API_KEY
 import com.drew.themoviedatabase.data.remote.MovieApiService
 import com.drew.themoviedatabase.data.remote.MovieDetailsResponse
 import com.drew.themoviedatabase.data.remote.MovieResponse
@@ -45,7 +46,6 @@ class MovieRepository @Inject constructor(
                         } catch (e : Exception) {
                             e.printStackTrace()
                         }
-
                     }
                 }
                 // Await all jobs to complete
@@ -62,15 +62,13 @@ class MovieRepository @Inject constructor(
     }
 
     private suspend fun fetchMovies(
-        pages: Int,
-        apiCall: suspend (Int) -> Response<MovieResponse?>?,
-
+        apiCall: suspend () -> Response<MovieResponse?>?,
     ) : List<com.drew.themoviedatabase.data.model.Movie?>? {
         return try {
             coroutineScope {
                 withContext(Dispatchers.IO) {
                     try {
-                        val response = apiCall(pages)
+                        val response = apiCall()
                         if (response?.isSuccessful == true) {
                             response.body()?.getResults()
                         } else {
@@ -134,11 +132,10 @@ class MovieRepository @Inject constructor(
     }
 
     private suspend fun fetchMovieDetails(
-        pages: Int,
-        apiCall: suspend (Int) -> Response<MovieResponse?>?
+        apiCall: suspend () -> Response<MovieResponse?>?
     ) : List<MovieDetailsReleaseData?>? {
         return try {
-            val movies = fetchMovies(pages = pages, apiCall = apiCall)
+            val movies = fetchMovies(apiCall = apiCall)
             if (movies != null) {
                 coroutineScope {
                     val detailedMovies = movies.map { movie ->
@@ -186,8 +183,7 @@ class MovieRepository @Inject constructor(
     suspend fun fetchPopularMovieDetails(pages: Int) : List<MovieDetailsReleaseData?>? {
        return try {
             fetchMovieDetails(
-                pages = pages,
-                apiCall = { page -> movieApiService.getPopularMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { movieApiService.getPopularMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -211,8 +207,7 @@ class MovieRepository @Inject constructor(
     suspend fun fetchTopRatedMovieDetails(pages: Int) : List<MovieDetailsReleaseData?>? {
         return try {
             fetchMovieDetails(
-                pages = pages,
-                apiCall = { page -> movieApiService.getTopRatedMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { movieApiService.getTopRatedMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -235,8 +230,18 @@ class MovieRepository @Inject constructor(
     suspend fun fetchNowPlayingMovieDetails(pages: Int): List<MovieDetailsReleaseData?>? {
         return try {
             fetchMovieDetails(
-                pages = pages,
-                apiCall = { page -> movieApiService.getNowPlayingMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = {  movieApiService.getNowPlayingMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  pages)?.execute() },
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun fetchMoviesByGenre(pages: Int, genreId: Int) : List<MovieDetailsReleaseData?>? {
+        return try {
+            fetchMovieDetails(
+                apiCall = { movieApiService.getMoviesByGenre(apiKey = API_KEY, language = defaultLocale(), genreId = genreId, page =  pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -260,8 +265,7 @@ class MovieRepository @Inject constructor(
     suspend fun fetchSimilarMovieDetails(movieId: Int, pages: Int) : List<MovieDetailsReleaseData?>? {
         return try {
             fetchMovieDetails(
-                pages = pages,
-                apiCall = { page -> movieApiService.getSimilarMovies(movieId = movieId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { movieApiService.getSimilarMovies(movieId = movieId, apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -284,8 +288,7 @@ class MovieRepository @Inject constructor(
     suspend fun fetchUpcomingMovieDetails(pages: Int): List<MovieDetailsReleaseData?>? {
       return try {
             fetchMovieDetails(
-                pages = pages,
-                apiCall = { page -> movieApiService.getUpcomingMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { movieApiService.getUpcomingMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  pages)?.execute() },
             )
         } catch (e : Exception) {
             e.printStackTrace()
@@ -308,8 +311,7 @@ class MovieRepository @Inject constructor(
     suspend fun fetchTrendingMovieDetails(pages: Int) :List<MovieDetailsReleaseData?>? {
        return try {
             fetchMovieDetails(
-                pages = pages,
-                apiCall = { page -> movieApiService.getTrendingMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  page)?.execute() }
+                apiCall = { movieApiService.getTrendingMovies(apiKey = com.drew.themoviedatabase.data.remote.API_KEY, language = defaultLocale(), page =  pages)?.execute() }
             )
         } catch (e : Exception) {
             e.printStackTrace()
