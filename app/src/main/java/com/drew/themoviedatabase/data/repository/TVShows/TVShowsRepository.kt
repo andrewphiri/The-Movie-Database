@@ -64,15 +64,13 @@ class TVShowsRepository@Inject constructor(
     }
 
     private suspend fun fetchTVShows(
-        pages: Int,
-        apiCall: suspend (Int) -> Response<TVShowsResponse?>?,
-
+        apiCall: suspend () -> Response<TVShowsResponse?>?,
         ) : List<com.drew.themoviedatabase.data.model.TVShow?>? {
         return try {
             coroutineScope {
                 withContext(Dispatchers.IO) {
                     try {
-                        val response = apiCall(pages)
+                        val response = apiCall()
                         if (response?.isSuccessful == true) {
                             response.body()?.getTVShows()
                         } else {
@@ -93,11 +91,10 @@ class TVShowsRepository@Inject constructor(
     }
 
     private suspend fun fetchTVShowDetails(
-        pages: Int,
-        apiCall: suspend (Int) -> Response<TVShowsResponse?>?
+        apiCall: suspend () -> Response<TVShowsResponse?>?
     ) : List<com.drew.themoviedatabase.data.model.TVShowDetails?>? {
         return try {
-            val shows = fetchTVShows(pages = pages, apiCall = apiCall)
+            val shows = fetchTVShows(apiCall = apiCall)
             if (shows != null) {
                 coroutineScope {
                     val tvshow = shows.map { movie ->
@@ -132,7 +129,7 @@ class TVShowsRepository@Inject constructor(
     private fun fetchTVShowDetails(
         pages: Int,
         apiCall: suspend (Int) -> Response<TVShowsResponse?>?,
-        callback: (List<com.drew.themoviedatabase.data.model.TVShowDetails?>?) -> Unit,
+        callback: (List<TVShowDetails?>?) -> Unit,
     ) {
         try {
             fetchTVShows(pages, apiCall) { tvShows ->
@@ -187,8 +184,7 @@ class TVShowsRepository@Inject constructor(
     suspend fun fetchPopularTVShowsDetails(pages: Int) : List<com.drew.themoviedatabase.data.model.TVShowDetails?>? {
        return try {
             fetchTVShowDetails(
-                pages = pages,
-                apiCall = { page -> tvShowApiService.getPopularTVShows(apiKey = API_KEY, language = defaultLocale(), page = page)?.execute() },
+                apiCall = {tvShowApiService.getPopularTVShows(apiKey = API_KEY, language = defaultLocale(), page = pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -211,8 +207,7 @@ class TVShowsRepository@Inject constructor(
     suspend fun fetchTopTVShowDetails(pages: Int) : List<com.drew.themoviedatabase.data.model.TVShowDetails?>? {
        return try {
             fetchTVShowDetails(
-                pages = pages,
-                apiCall = { page -> tvShowApiService.getTopRatedTVShows(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { tvShowApiService.getTopRatedTVShows(apiKey = API_KEY, language = defaultLocale(), page =  pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -236,8 +231,7 @@ class TVShowsRepository@Inject constructor(
     suspend fun fetchOnTheAirTVShows(pages: Int) : List<com.drew.themoviedatabase.data.model.TVShowDetails?>? {
         return try {
             fetchTVShowDetails(
-                pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsOnTheAir(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { tvShowApiService.getTVShowsOnTheAir(apiKey = API_KEY, language = defaultLocale(), page =  pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -260,8 +254,7 @@ class TVShowsRepository@Inject constructor(
     suspend fun fetchAiringTodayTVShows(pages: Int) : List<com.drew.themoviedatabase.data.model.TVShowDetails?>? {
        return try {
             fetchTVShowDetails(
-                pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsAiringToday(apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },
+                apiCall = { tvShowApiService.getTVShowsAiringToday(apiKey = API_KEY, language = defaultLocale(), page =  pages)?.execute() },
             )
         } catch (e : Exception) {
             e.printStackTrace()
@@ -283,8 +276,7 @@ class TVShowsRepository@Inject constructor(
     suspend fun fetchSimilarTVShows(seriesId: Int, pages: Int) : List<com.drew.themoviedatabase.data.model.TVShowDetails?>?{
         return try {
             fetchTVShowDetails(
-                pages = pages,
-                apiCall = { page -> tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = API_KEY, language = defaultLocale(), page =  page)?.execute() },)
+                apiCall = { tvShowApiService.getSimilarTVShows(seriesId = seriesId, apiKey = API_KEY, language = defaultLocale(), page =  pages)?.execute() },)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -341,8 +333,7 @@ class TVShowsRepository@Inject constructor(
     suspend fun fetchTVShowByGenre(pages: Int, genreId: Int) : List<TVShowDetails?>? {
         return try {
             fetchTVShowDetails(
-                pages = pages,
-                apiCall = { page -> tvShowApiService.getTVShowsByGenre(apiKey = API_KEY, language = defaultLocale(), genreId = genreId, page =  page)?.execute() },
+                apiCall = {tvShowApiService.getTVShowsByGenre(apiKey = API_KEY, language = defaultLocale(), genreId = genreId, page =  pages)?.execute() },
             )
         } catch (e: Exception) {
             e.printStackTrace()

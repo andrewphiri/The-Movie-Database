@@ -52,10 +52,13 @@ fun MovieTrailersScreen(
 //            trailers = trailers,
 //            listState = listState
 //        )
-        VideosPager(
-            modifier = modifier.padding(innerPadding),
-            trailers = trailers?.map { it?.key } ,
-        )
+        trailers?.map { it?.key }?.let {
+            VideosPager(
+                modifier = modifier.padding(innerPadding),
+                trailers = it,
+                videoIdsString = it.joinToString(separator = ",")
+            )
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 package com.drew.themoviedatabase.data.repository
 
+import android.util.Log
 import com.drew.themoviedatabase.data.remote.PlaylistResponse
 import com.drew.themoviedatabase.data.remote.YoutubeApiService
 import com.drew.themoviedatabase.data.remote.YoutubeResponse
@@ -22,8 +23,10 @@ class YoutubeRepository @Inject constructor(
                            apiKey = com.drew.themoviedatabase.data.remote.YOUTUBE_API_KEY)?.execute()
 
                        if (response?.isSuccessful == true) {
+                          // Log.d("YoutubeRepository", "Response body: ${response.body()}")
                            response.body()
                        } else {
+                          // Log.d("YoutubeRepository", "Response error: ${response?.errorBody()?.string()}")
                            null
                        }
                    } catch (e: Exception) {
@@ -47,8 +50,10 @@ class YoutubeRepository @Inject constructor(
                             apiKey = com.drew.themoviedatabase.data.remote.YOUTUBE_API_KEY)?.execute()
 
                         if (response?.isSuccessful == true) {
+                            //Log.d("YoutubeRepository", "Response body: ${response.body()}")
                             response.body()
                         } else {
+                            //Log.d("YoutubeRepository", "Response error: ${response?.errorBody()?.string()}")
                             null
                         }
                     } catch (e: Exception) {

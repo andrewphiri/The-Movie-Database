@@ -1176,11 +1176,11 @@ fun YouTubeSinglePlayer(
 @Composable
 fun YouTubePlayerWithPlaylist(
     modifier: Modifier = Modifier,
-    videoIds: SnapshotStateList<String?>?,
+    videoIdsString: String?,
 ) {
     // Convert the videoIds list to a comma-separated string
 
-    val videoIdsString by rememberSaveable { mutableStateOf( videoIds?.joinToString(separator = ",")) }
+   // val videoIdsString by rememberSaveable { mutableStateOf( videoIds?.joinToString(separator = ",")) }
     val htmlData = """
         <!DOCTYPE html>
         <html>
@@ -2298,10 +2298,12 @@ fun MovieTVCertifications(
 fun VideosPager(
     modifier: Modifier = Modifier,
     trailers: List<String?>?,
+    videoIdsString: String?,
 ) {
     val pagerState = rememberPagerState {
         trailers?.size ?: 0
     }
+    //val videoIdsString = trailers?.shuffled()?.joinToString(separator = ",")
     Box(modifier = modifier.fillMaxSize()) {
 
             HorizontalPager(state = pagerState) {
@@ -2309,7 +2311,7 @@ fun VideosPager(
                     LoadingSpinner(modifier = Modifier.align(Alignment.Center))
                 } else {
                     YouTubePlayerWithPlaylist(
-                        videoIds = trailers.shuffled().toMutableStateList()
+                        videoIdsString = videoIdsString
                     )
                 }
 
