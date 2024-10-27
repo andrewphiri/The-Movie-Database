@@ -1,16 +1,22 @@
 package com.drew.themoviedatabase.screens.Videos
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.drew.themoviedatabase.data.model.YoutubeChannels
+import com.drew.themoviedatabase.data.repository.ChannelsRepository
 import com.drew.themoviedatabase.data.repository.YoutubeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
@@ -19,7 +25,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class VideosViewModel @Inject constructor(
-    private val youtubeRepository: YoutubeRepository
+    private val youtubeRepository: YoutubeRepository,
+    private val channelRepository: ChannelsRepository
 ) : ViewModel() {
 
     private val _playlistID = MutableLiveData<String?>()
@@ -36,6 +43,15 @@ class VideosViewModel @Inject constructor(
 
     private val _queuedItems = MutableLiveData<List<String>?>()
     val queuedItems: LiveData<List<String>?> get() = _queuedItems
+
+    val getChannels: StateFlow<List<YoutubeChannels>> =
+        channelRepository.getChannels().map {
+            it
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     suspend fun getPlaylistID(channelID: String) : String? {
          return coroutineScope {
@@ -135,5 +151,27 @@ class VideosViewModel @Inject constructor(
 
             }
         }
+    }
+
+    fun insertChannel(youtubeChannel: YoutubeChannels) {
+        viewModelScope.launch {
+            channelRepository.insertChannel(youtubeChannel)
+        }
+    }
+
+    fun deleteChannel(channelId: String) {
+        viewModelScope.launch {
+            channelRepository.deleteChannel(channelId)
+        }
+    }
+
+    fun updateChannel(youtubeChannel: YoutubeChannels) {
+        viewModelScope.launch {
+            channelRepository.updateChannel(youtubeChannel)
+        }
+    }
+
+    fun getChannelsByIDs(id : String): Flow<YoutubeChannels> {
+        return channelRepository.getChannelByID(id)
     }
 }

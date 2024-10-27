@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.drew.themoviedatabase.data.model.YoutubeChannels
 import com.drew.themoviedatabase.screens.commonComposeUi.LoadingSpinner
 import com.drew.themoviedatabase.screens.commonComposeUi.VideosPager
 import kotlinx.coroutines.Dispatchers
@@ -64,18 +65,19 @@ fun VideosScreen(
     val myPlayListItems by  viewModel.myPlaylistItems.collectAsState()
     //val myPlayListItemsStateFlow by viewModel.myPlaylistItems.collectAsState(listOf())
     var isExpanded by rememberSaveable { mutableStateOf(false) }
-    val channels by viewModel.channels.observeAsState()
-    var myChannels: MutableMap<String, Pair<String,Boolean>>? = remember { mutableStateMapOf() }
-    myChannels = channels
-
-    //val myPlayListItemsStateFlow by viewModel.myPlaylistItems.collectAsState(listOf())
-    var myItems by rememberSaveable { mutableStateOf(listOf<String?>()) }
+    val channels by viewModel.getChannels.collectAsState()
+//    var myChannels: MutableMap<String, Pair<String,Boolean>>? = remember { mutableStateMapOf() }
+//    //myChannels = channels
+//
+//    //val myPlayListItemsStateFlow by viewModel.myPlaylistItems.collectAsState(listOf())
+//    var myItems by rememberSaveable { mutableStateOf(listOf<String?>()) }
     val myQueuedItems by viewModel.queuedItems.observeAsState()
 
     var isLoading by remember { mutableStateOf(true) }
-    LaunchedEffect(key1 = Unit) {
-        viewModel.setChannels()
-    }
+
+//    LaunchedEffect(key1 = Unit) {
+//        viewModel.setChannels()
+//    }
 
 
 //    myItems = playlistItems.values.flatMap { list ->
@@ -91,18 +93,18 @@ fun VideosScreen(
 //   }
 
    //Log.d("VideosScreen_OUT_OF_LOOP", "Viewmodel; items_: ${myItems}")
-   Log.d("QUEUED_OUT_OF_LOOP", "Viewmodel; items_: ${myQueuedItems}")
-    Log.d("VideosScreen_OUT_OF_LOOP", "Viewmodel; items_: ${playlistItems}")
+   //Log.d("QUEUED_OUT_OF_LOOP", "Viewmodel; items_: ${myQueuedItems}")
+   // Log.d("VideosScreen_OUT_OF_LOOP", "Viewmodel; items_: ${playlistItems}")
     LaunchedEffect(key1 = channels) {
        // Log.d("VideosScreen_OUT_OF_LOOP", "Viewmodel; items_: ${playlistItems}")
         try {
-            if (myChannels != null) {
-                for (item in myChannels) {
-                    if (item.value.second) {
-                            val playlistID = async { viewModel.getPlaylistID(item.value.first) }.await()
+            if (channels != null) {
+                for (item in channels) {
+                    if (item.isChannelEnabled) {
+                            val playlistID = async { viewModel.getPlaylistID(item.channelID) }.await()
                        // Log.d("VideosScreen", "Playlist ID: $playlistID")
                             if (playlistID != null) {
-                                val myList =  async { viewModel.getTheMyPlaylistItems(channelName = item.key,playlistId = playlistID) }.await()
+                                val myList =  async { viewModel.getTheMyPlaylistItems(channelName = item.channelName,playlistId = playlistID) }.await()
                                 if (myList != null) {
                                     viewModel.setMyPlaylistItems(myList = myList)
                                         //Log.d("VideosScreen", "Playlist items: ${myPlayListItems}")
@@ -110,7 +112,7 @@ fun VideosScreen(
                             }
 
                     } else {
-                        viewModel.removeFromMyPlaylistItems(item.key)
+                        viewModel.removeFromMyPlaylistItems(item.channelName)
                     }
                 }
 
@@ -147,7 +149,7 @@ fun VideosScreen(
                 LoadingSpinner()
             }
 
-            if (channels?.all { it.value.second } == true) {
+            if (channels.all { !it.isChannelEnabled }) {
                 Text(
                     text = "No channels selected",
                     style = MaterialTheme.typography.titleLarge
@@ -172,83 +174,83 @@ fun VideosScreen(
                             contentDescription = "More"
                         )
                     }
-                    myChannels?.let { theChannels ->
+                    channels.let { theChannels ->
                         YoutubeChannelsList(
                             modifier = Modifier.align(Alignment.TopEnd),
-                            onClickEnable = { key, enabled ->
+                            onClickEnable = { channel ->
                                 try {
-                                    myChannels[key] = Pair(myChannels[key]!!.first, enabled)
+                                    //myChannels[key] = Pair(myChannels[key]!!.first, enabled)
                                     //Log.d("VideosScreen", "Channels: $enabled")
                                     // Log.d("VideosScreen", "Channels: $theChannels")
-                                    viewModel.setChannels(myChannels)
+                                    //viewModel.setChannels(myChannels)
 
                                     coroutineScope.launch {
 
-                                            if (myChannels[key]?.second == true) {
+                                        viewModel.updateChannel(channel)
 
-                                                val playlistID = async {
-                                                    myChannels[key]?.first?.let { channelID ->
-                                                        viewModel.getPlaylistID(
-                                                            channelID
-                                                        )
-                                                    }
+                                        if (channel.isChannelEnabled) {
+
+                                            val playlistID = async {
+                                                    viewModel.getPlaylistID(
+                                                        channel.channelID
+                                                    )
+                                            }.await()
+                                            // Log.d("VideosScreen", "Playlist ID: $playlistID")
+                                            if (playlistID != null) {
+                                                val myList = async {
+                                                    viewModel.getTheMyPlaylistItems(
+                                                        channelName = channel.channelName,
+                                                        playlistId = playlistID
+                                                    )
                                                 }.await()
-                                                // Log.d("VideosScreen", "Playlist ID: $playlistID")
-                                                if (playlistID != null) {
-                                                    val myList = async {
-                                                        viewModel.getTheMyPlaylistItems(
-                                                            channelName = key,
-                                                            playlistId = playlistID
-                                                        )
-                                                    }.await()
 
-                                                    if (myList != null) {
-                                                        viewModel.setMyPlaylistItems(myList = myList)
-                                                    }
-                                                    isLoading = true
-                                                    viewModel.clearPlaylistItems()
-                                                    isLoading = playlistItems.isEmpty()
-                                                    viewModel.setPlaylistItems(myPlayListItems)
+                                                if (myList != null) {
+                                                    viewModel.setMyPlaylistItems(myList = myList)
                                                 }
-                                                withContext(Dispatchers.Main) {
-                                                    viewModel.setQueuedItems(playlistItems.values.flatMap { list ->
-                                                        list?.filterNotNull()
-                                                            .orEmpty()
-                                                    })
-                                                }
+                                                isLoading = true
 
-
-                                            } else {
-                                                // Log.d("VideosScreen", "Playlist ID: $playlistID")
-
-                                                 viewModel.removeFromMyPlaylistItems(key)
-                                                 isLoading = true
-                                                 //viewModel.clearPlaylistItems()
-                                                 isLoading = playlistItems.isEmpty()
-                                                // Log.d("VideosScreen", "Playlist items: ${playlistItems?.toList()}")
-                                                 //delay(3000)
-                                                 viewModel.setPlaylistItems(myPlayListItems)
-                                                withContext(Dispatchers.Main) {
-                                                    viewModel.setQueuedItems(playlistItems.values.flatMap { list ->
-                                                        list?.filterNotNull()
-                                                            .orEmpty()
-                                                    })
-                                                }
-
-                                                // Log.d("VideosScreen", "Playlist items: ${playlistItems?.toList()}")
-
-
-                                                //Log.d("VideosViewModel_REMOVED", playlistItems.toString())
-
-                                                //viewModel.removeFromMyPlaylistItems(myPlayListItems)
-//                                            Log.d("VideosScreen", "MYPlaylist items: ${myPlayListItems.toList()}")
-//                                            Log.d("VideosScreen", "Playlist items: ${playlistItems?.toList()}")
-
+                                                isLoading = playlistItems.isEmpty()
+                                                viewModel.setPlaylistItems(myPlayListItems)
                                             }
-                                            //isLoading = false
-                                            //Log.d("VideosScreen", "Playlist items: ${myPlayListItems.toList()}")
-                                            // viewModel.setPlaylistItems(myPlayListItems.shuffled())
-                                            // Log.d("VideosScreen_OUT_OF_LOOP", "Viewmode; items_: ${playlistItems}"
+                                            withContext(Dispatchers.Main) {
+                                                viewModel.setQueuedItems(playlistItems.values.flatMap { list ->
+                                                    list?.filterNotNull()
+                                                        .orEmpty()
+                                                })
+                                            }
+
+
+                                        } else {
+                                            // Log.d("VideosScreen", "Playlist ID: $playlistID")
+
+                                            viewModel.removeFromMyPlaylistItems(channel.channelName)
+                                            isLoading = true
+                                            //viewModel.clearPlaylistItems()
+                                            isLoading = playlistItems.isEmpty()
+                                            // Log.d("VideosScreen", "Playlist items: ${playlistItems?.toList()}")
+                                            //delay(3000)
+                                            viewModel.setPlaylistItems(myPlayListItems)
+                                            withContext(Dispatchers.Main) {
+                                                viewModel.setQueuedItems(playlistItems.values.flatMap { list ->
+                                                    list?.filterNotNull()
+                                                        .orEmpty()
+                                                })
+                                            }
+
+                                            // Log.d("VideosScreen", "Playlist items: ${playlistItems?.toList()}")
+
+
+                                            //Log.d("VideosViewModel_REMOVED", playlistItems.toString())
+
+                                            //viewModel.removeFromMyPlaylistItems(myPlayListItems)
+                //                                            Log.d("VideosScreen", "MYPlaylist items: ${myPlayListItems.toList()}")
+                //                                            Log.d("VideosScreen", "Playlist items: ${playlistItems?.toList()}")
+
+                                        }
+                                        //isLoading = false
+                                        //Log.d("VideosScreen", "Playlist items: ${myPlayListItems.toList()}")
+                                        // viewModel.setPlaylistItems(myPlayListItems.shuffled())
+                                        // Log.d("VideosScreen_OUT_OF_LOOP", "Viewmode; items_: ${playlistItems}"
                                     }
 
                                 } catch (e: Exception) {
@@ -280,8 +282,8 @@ fun VideosScreen(
 @Composable
 fun YoutubeChannelsList(
     modifier: Modifier = Modifier,
-    myChannels: Map<String, Pair<String,Boolean>>,
-    onClickEnable: (String, Boolean) -> Unit,
+    myChannels: List<YoutubeChannels>,
+    onClickEnable: (YoutubeChannels) -> Unit,
     onDismissRequest: () -> Unit,
     isExpanded: Boolean
 ) {
@@ -294,15 +296,12 @@ fun YoutubeChannelsList(
             expanded = isExpanded,
             onDismissRequest = onDismissRequest
         ) {
-                for (index in myChannels.keys.indices) {
+                for (channel in myChannels) {
                     //enabled = myChannels.values.elementAt(index)
                     //Log.d("VideosScreen_1", "Channels: ${myChannels.values.elementAt(index)}")
                     YouTubeChannelsItem(
-                        channelName = myChannels.keys.elementAt(index),
-                        onCheckedChange = {
-                            onClickEnable(myChannels.keys.elementAt(index), it)
-                        },
-                        itemChecked =  myChannels.values.elementAt(index).second
+                        youtubeChannel = channel,
+                        onCheckedChange = onClickEnable
                     )
                 }
         }
@@ -329,21 +328,20 @@ fun YoutubeChannelsList(
 @Composable
 fun YouTubeChannelsItem(
     modifier: Modifier = Modifier,
-    channelName: String,
-    itemChecked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    youtubeChannel: YoutubeChannels,
+    onCheckedChange: (YoutubeChannels) -> Unit
 ) {
-    var checked by rememberSaveable { mutableStateOf(itemChecked) }
+    var checked by rememberSaveable { mutableStateOf(youtubeChannel.isChannelEnabled) }
     DropdownMenuItem(
         modifier = modifier,
-        text = { Text(text = channelName) },
+        text = { Text(text = youtubeChannel.channelName) },
         onClick = {},
         trailingIcon = {
             Switch(
                 checked = checked,
                 onCheckedChange = {
                     checked = it
-                    onCheckedChange(it)
+                    onCheckedChange(youtubeChannel.copy(isChannelEnabled = it))
                 }
             )
         }

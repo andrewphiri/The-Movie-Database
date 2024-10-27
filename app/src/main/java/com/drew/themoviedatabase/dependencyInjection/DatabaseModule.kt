@@ -2,6 +2,8 @@ package com.drew.themoviedatabase.dependencyInjection
 
 import android.content.Context
 import androidx.room.Room
+import com.drew.themoviedatabase.data.room.ChannelDao
+import com.drew.themoviedatabase.data.room.ChannelDatabase
 import com.drew.themoviedatabase.data.room.MoviesShowsDao
 import com.drew.themoviedatabase.data.room.MoviesShowsDatabase
 import dagger.Module
@@ -28,4 +30,18 @@ object DatabaseModule {
             .build()
     }
 
+    @Provides
+    fun provideChannelDao(channelDatabase: ChannelDatabase): ChannelDao {
+        return channelDatabase.channelDao()
+    }
+
+    @Provides
+    fun provideChannelDatabase(@ApplicationContext context: Context): ChannelDatabase {
+        return Room.databaseBuilder(
+            context,
+            ChannelDatabase::class.java,
+            "channel_database"
+        ).fallbackToDestructiveMigration()
+            .build()
+    }
 }

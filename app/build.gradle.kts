@@ -5,6 +5,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     alias(libs.plugins.kotlin.serialization)
     id ("com.google.devtools.ksp")
+    id ("com.google.protobuf") version "0.9.4"
 }
 
 android {
@@ -121,6 +122,35 @@ dependencies {
     // To use Kotlin Symbol Processing (KSP)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+
+    //Preferences DataStore
+    implementation(libs.androidx.datastore.preferences.core)
+
+    //Proto DataStore
+    implementation(libs.androidx.datastore)
+    //Protobuf
+    implementation(libs.protobuf.javalite)
 }
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.24.1"
+    }
+    // Generates the java Protobuf-lite code for the Protobufs in this project. See
+    // https://github.com/google/protobuf-gradle-plugin#customizing-protobuf-compilation
+    // for more information.
+    plugins {
+        generateProtoTasks {
+            all().forEach {
+                it.builtins {
+                    create("java") {
+                        option("lite")
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 
