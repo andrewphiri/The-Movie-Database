@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,7 +14,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.drew.themoviedatabase.data.model.YoutubeChannels
 import com.drew.themoviedatabase.prefs.UserPreferencesViewModel
 import com.drew.themoviedatabase.screens.Profile.LoginViewModel
@@ -41,17 +44,22 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this)[UserPreferencesViewModel::class.java]
     }
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        //enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            val isDataInserted by userPrefsViewModel.isDataInserted.collectAsState(false)
-            Log.d("MainActivity", "isDataInserted: $isDataInserted")
+            val connectivityViewModel : ConnectivityViewModel = hiltViewModel()
+            val isConnected by connectivityViewModel.isConnected.collectAsStateWithLifecycle()
+            Log.d("MainActivity", "isConnected: $isConnected")
+
+            val isDataInserted by userPrefsViewModel.isDataInserted.collectAsState()
+            //Log.d("MainActivity", "isDataInserted: $isDataInserted")
             insertChannels(isDataInserted)
-            val connectivityManager = getSystemService(ConnectivityManager::class.java)
-            val currentNetwork = connectivityManager.activeNetwork
-            //Log.d("MainActivity", "Current network: $currentNetwork")
+
             TheMovieDatabaseDarkTheme {
-                    MovieDatabaseApp(loginViewModel = loginViewModel)
+
+                    MovieDatabaseApp(
+                        isConnected = isConnected,
+                        loginViewModel = loginViewModel)
             }
         }
     }

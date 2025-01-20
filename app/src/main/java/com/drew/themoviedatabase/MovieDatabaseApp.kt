@@ -1,6 +1,9 @@
 package com.drew.themoviedatabase
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -20,7 +23,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -40,6 +45,7 @@ import com.drew.themoviedatabase.screens.Videos.VideosScreen
 fun MovieDatabaseApp(
     modifier: Modifier = Modifier,
     loginViewModel: LoginViewModel,
+    isConnected: Boolean,
     navController: NavHostController = rememberNavController()
 ) {
 val listState = rememberLazyListState()
@@ -51,11 +57,25 @@ val listState = rememberLazyListState()
                 )
         }
     ) { padding ->
-        MovieNavHost(
-            modifier = modifier.padding(padding),
-            navController = navController,
-            loginViewModel = loginViewModel
-        )
+        if (isConnected) {
+            MovieNavHost(
+                modifier = modifier.padding(padding),
+                navController = navController,
+                loginViewModel = loginViewModel
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    text = "Unfortunately something went wrong. Please check your internet connection."
+                )
+            }
+
+        }
     }
 }
 

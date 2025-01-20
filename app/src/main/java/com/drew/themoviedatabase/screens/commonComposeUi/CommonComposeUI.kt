@@ -8,6 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -937,6 +939,7 @@ fun YouTubePlayer(
         <!DOCTYPE html>
         <html>
         <head>
+         <meta name="referrer" content="origin-when-cross-origin">
           <style>
             body {
               margin: 0;
@@ -1059,6 +1062,7 @@ fun YouTubeSinglePlayer(
         <!DOCTYPE html>
         <html>
         <head>
+         <meta name="referrer" content="origin-when-cross-origin">
           <style>
             body {
               margin: 0;
@@ -1185,6 +1189,7 @@ fun YouTubePlayerWithPlaylist(
         <!DOCTYPE html>
         <html>
         <head>
+        <meta name="referrer" content="strict-origin-when-cross-origin">
           <style>
             body {
               margin: 0;
@@ -1234,11 +1239,15 @@ fun YouTubePlayerWithPlaylist(
                 'playsinline': 1,
                  'mute': 0, 
                 'controls': 1, 
-                'rel': 0    
+                'rel': 0,
+                'showinfo': 1,
+                'modestbranding': 1,
+                autohide: 0,
                 },
                 events: {
                   'onReady': onPlayerReady,
-                  'onStateChange': onPlayerStateChange
+                  'onStateChange': onPlayerStateChange,
+                  'onError': onPlayerError
                 }
               });
             }
@@ -1246,6 +1255,11 @@ fun YouTubePlayerWithPlaylist(
             function onPlayerReady(event) {
              event.target.playVideo();
              player.mute()
+            }
+            
+            function onPlayerError(event) {
+                console.error("Error occurred in video playback. Attempting to play next video.");
+                player.nextVideo(); // Plays the next video in the playlist
             }
 
            function onPlayerStateChange(events) {
@@ -2294,15 +2308,15 @@ fun MovieTVCertifications(
         }
     }
 }
+
 @Composable
 fun VideosPager(
     modifier: Modifier = Modifier,
     trailers: List<String?>?,
     videoIdsString: String?,
+    pagerState: PagerState = rememberPagerState {trailers?.size ?: 0}
 ) {
-    val pagerState = rememberPagerState {
-        trailers?.size ?: 0
-    }
+
     //val videoIdsString = trailers?.shuffled()?.joinToString(separator = ",")
     Box(modifier = modifier.fillMaxSize()) {
 

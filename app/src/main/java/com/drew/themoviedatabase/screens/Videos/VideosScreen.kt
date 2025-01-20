@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
@@ -75,30 +76,21 @@ fun VideosScreen(
 
     var isLoading by remember { mutableStateOf(true) }
 
-//    LaunchedEffect(key1 = Unit) {
-//        viewModel.setChannels()
-//    }
+    val pagerState = rememberPagerState() {
+        myQueuedItems?.size ?: 0
+    }
 
-
-//    myItems = playlistItems.values.flatMap { list ->
-//        list?.filterNotNull()
-//            .orEmpty()
-//    }
-
-//   LaunchedEffect(playlistItems) {
-//       viewModel.setQueuedItems(playlistItems.values.flatMap { list ->
-//           list?.filterNotNull()
-//               .orEmpty()
-//       })
-//   }
+    LaunchedEffect(key1 = pagerState.currentPage) {
+        viewModel.setQueuedItems(myQueuedItems?.shuffled())
+    }
 
    //Log.d("VideosScreen_OUT_OF_LOOP", "Viewmodel; items_: ${myItems}")
-   //Log.d("QUEUED_OUT_OF_LOOP", "Viewmodel; items_: ${myQueuedItems}")
+   //Log.d("QUEUED_OUT_OF_LOOP", "Viewmodel; items_: ${myQueuedItems?.joinToString(separator = ",")}")
    // Log.d("VideosScreen_OUT_OF_LOOP", "Viewmodel; items_: ${playlistItems}")
     LaunchedEffect(key1 = channels) {
        // Log.d("VideosScreen_OUT_OF_LOOP", "Viewmodel; items_: ${playlistItems}")
         try {
-            if (channels != null) {
+        if (myPlayListItems.isEmpty()) {
                 for (item in channels) {
                     if (item.isChannelEnabled) {
                             val playlistID = async { viewModel.getPlaylistID(item.channelID) }.await()
@@ -121,7 +113,7 @@ fun VideosScreen(
                     viewModel.setQueuedItems(playlistItems.values.flatMap { list ->
                         list?.filterNotNull()
                             .orEmpty()
-                    })
+                    }.shuffled())
                 }
               // Log.d("VideosScreen_OUT_OF_LOOP", "Viewmode; items_: ${playlistItems}")
             }
@@ -150,6 +142,7 @@ fun VideosScreen(
             }
 
             if (channels.all { !it.isChannelEnabled }) {
+                //isLoading = false
                 Text(
                     text = "No channels selected",
                     style = MaterialTheme.typography.titleLarge
@@ -234,7 +227,7 @@ fun VideosScreen(
                                                 viewModel.setQueuedItems(playlistItems.values.flatMap { list ->
                                                     list?.filterNotNull()
                                                         .orEmpty()
-                                                })
+                                                }.shuffled())
                                             }
 
                                             // Log.d("VideosScreen", "Playlist items: ${playlistItems?.toList()}")
@@ -269,7 +262,8 @@ fun VideosScreen(
 
                 myQueuedItems?.let {
                     VideosPager(
-                        trailers = it,
+                        pagerState = pagerState,
+                        trailers = it.shuffled(),
                         videoIdsString = it.joinToString(separator = ",")
                     )
                 }
