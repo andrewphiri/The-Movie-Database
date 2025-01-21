@@ -6,11 +6,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 const val BASE_URL = "https://api.themoviedb.org/3/"
 const val IMAGE_BASE_URL = "https://image.tmdb.org/t/p/"
-const val API_KEY = "Provide your own key"
+const val API_KEY = "Provide your own API key"
 const val IMAGE_SIZE = "w300" // You can use different sizes like w200, w300, original, etc.
 const val TRAILER_BASE_URL = "https://www.youtube.com/watch?v="
 const val YOUTUBE_BASE_URL = "https://youtube.googleapis.com/youtube/v3/"
-const val YOUTUBE_API_KEY = "Provide your own key"
+const val YOUTUBE_API_KEY = "Provide your own API key"
 
 
 class NetworkClient {
